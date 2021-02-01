@@ -22,32 +22,32 @@
 %  \item Retrieve the dataset in MATLAB using the IEEGToolbox and generate a \emph{session} variable as before (No need to report the output this time). What is the sampling rate of this data? What is the maximum frequency of the signal content that we can resolve? (2 pts)
 % </latex>
 
-%% 
+%% Add HW folder and IEEG toolbox to path
 
 cd('/Users/sppatankar/Developer/BE-521')
 addpath(genpath('ieeg-matlab-1.14.49'))
 addpath(genpath('Homework_0'))
-
 % password_file = IEEGSession.createPwdFile('spatank', '***');
 
-session_1 = IEEGSession('I521_A0001_D002', 'spatank', 'spa_ieeglogin.bin');
+%% 
 
-sampling_rate = session_1.data.sampleRate  
-max_frequency = sampling_rate/2
+session_2 = IEEGSession('I521_A0001_D002', 'spatank', 'spa_ieeglogin.bin');
+sampling_rate_2 = session_2.data.sampleRate % Hz
+max_frequency = sampling_rate_2/2
 
 %%
 % <latex>
 %  \item How does the duration of this recording compare with the recording from HW0 \texttt{(I521\_A0001\_D001)}? (2 pts)
 % </latex>
 
-session_0 = IEEGSession('I521_A0001_D001', 'spatank', 'spa_ieeglogin.bin');
-durationInUSec_0 = session_0.data(1).rawChannels(1).get_tsdetails.getDuration;
-durationInSec_0 = durationInUSec_0/1e6;
-
+session_1 = IEEGSession('I521_A0001_D001', 'spatank', 'spa_ieeglogin.bin');
 durationInUSec_1 = session_1.data(1).rawChannels(1).get_tsdetails.getDuration;
 durationInSec_1 = durationInUSec_1/1e6;
 
-compare_durations = durationInSec_1/durationInSec_0
+durationInUSec_2 = session_2.data(1).rawChannels(1).get_tsdetails.getDuration;
+durationInSec_2 = durationInUSec_2/1e6;
+
+compare_durations = durationInSec_2/durationInSec_1
 
 %% 
 % Recording from \texttt{(I521\_A0001\_D002)} is 65 times longer than the
@@ -59,15 +59,19 @@ compare_durations = durationInSec_1/durationInSec_0
 % </latex>
 
 %% 
-% Answer here. Be sure to add similar comment sections for your other answers
+% <latex>
+% \includegraphics[scale=0.25]{screenshot.png}
+% </latex>
 
 %%
 % <latex>
-%  \item Compare the activity in this sample with the data from HW0.  What differences do you notice in the amplitude and frequency characteristics? (2 pts)
+%  \item Compare the activity in this sample with the data from HW0. What differences do you notice in the amplitude and frequency characteristics? (2 pts)
 % </latex>
 
 %% 
-% Answer here. Be sure to add similar comment sections for your other answers
+% The time series in \texttt{(I521\_A0001\_D002)} has a significantly
+% higher amplitude than the one in \texttt{(I521\_A0001\_D001)}. \texttt{(I521\_A0001\_D001)} has higher frequency
+% oscillations.
 
 %%
 % <latex>
@@ -75,7 +79,14 @@ compare_durations = durationInSec_1/durationInSec_0
 % </latex>
 
 %% 
-% Answer here. Be sure to add similar comment sections for your other answers
+% Based on the 1/f scaling factor, higher frequencies have lower power. 
+% Since \texttt{(I521\_A0001\_D001)} was high-pass filtered leaving
+% only its high frequency components, it has a generally low power. On the
+% other hand, \texttt{(I521\_A0001\_D002)} has its lower frequency
+% components intact implying that it has high power. Acknowledging that power and
+% amplitude are not the same but closely related, based on their
+% respective frequency contents, it makes sense that \texttt{(I521\_A0001\_D001)}
+% has a lower amplitude on average than \texttt{(I521\_A0001\_D002)}.
 
 %%
 % <latex>
@@ -83,23 +94,20 @@ compare_durations = durationInSec_1/durationInSec_0
 % </latex>
 
 %% 
-% Answer here. Be sure to add similar comment sections for your other answers
+% TO-DO
 
 %%
 % <latex>
-%  \item What is a local field potential? How might the  characteristics of human iEEG electrodes cause them to record local field potentials as opposed to multiunit activity, which was the signal featured in HW0 as recorded from 40 micron Pt-Ir microwire electrodes? (2 pts)
+%  \item What is a local field potential? How might the characteristics of human iEEG electrodes cause them to record local field potentials as opposed to multiunit activity, which was the signal featured in HW0 as recorded from 40 micron Pt-Ir microwire electrodes? (2 pts)
 % </latex>
 
 %% 
-% Answer here. Be sure to add similar comment sections for your other answers
+% TO-DO
 
 %%
 % <latex>
 % \end{enumerate}
 % </latex>
-
-%% 
-% Answer here. Be sure to add similar comment sections for your other answers
 
 %%
 % <latex>
@@ -115,7 +123,10 @@ compare_durations = durationInSec_1/durationInSec_0
 % </latex>
 
 %% 
-% Answer here. Be sure to add similar comment sections for your other answers
+
+% In my view, using all of the data seems reasonable. No section of the
+% data is significantly better/worse than its other sections to justify 
+% keeping/omiting it. 
 
 %%
 % <latex>
@@ -123,7 +134,33 @@ compare_durations = durationInSec_1/durationInSec_0
 % </latex>
 
 %% 
-% Answer here. Be sure to add similar comment sections for your other answers
+
+session_3 = IEEGSession('I521_A0001_D003', 'spatank', 'spa_ieeglogin.bin');
+
+sampling_rate_3 = session_3.data.sampleRate;
+
+start_time_3 = 0;
+end_time_3 = session_3.data.rawChannels(1).get_tsdetails.getEndTime/1e6; % s
+
+ep_nr = ceil(end_time_3*sampling_rate_3);
+ep = session_3.data.getvalues(1:ep_nr, 1);
+
+stim_nr = ceil(end_time_3*sampling_rate_3);
+stim = session_3.data.getvalues(1:stim_nr, 2);
+
+window_size = 1 * sampling_rate_3; % 1 s windows
+ep_windowed = reshape(ep, window_size, []);
+[~, max_time_idx] = max(ep_windowed);
+max_time = (max_time_idx./sampling_rate_3);
+latency_ms = mean(max_time) * 1000 % ms
+
+% curr_start_time = 0;
+% time_window = linspace(curr_start_time, curr_start_time + 1, window_size);
+% figure;
+% plot(time_window, ep_windowed(:, curr_start_time + 1))
+% xlabel('Time (s)');
+% ylabel('\muV');
+% title('EP Signal');
 
 %%
 % <latex>
@@ -132,7 +169,19 @@ compare_durations = durationInSec_1/durationInSec_0
 % </latex>
 
 %% 
-% Answer here. Be sure to add similar comment sections for your other answers
+
+spike_trig_avg = mean(ep_windowed, 2);
+time_window = linspace(0, 1, length(spike_trig_avg));
+figure;
+hold on
+errorbar(time_window, spike_trig_avg, std(ep_windowed, [], 2), ...
+    'Color', [0.7, 0.7, 0.7]);
+plot(time_window, spike_trig_avg, 'r', 'LineWidth', 2)
+legend('\sigma', 'STA', 'Location', 'NorthEast');
+hold off
+xlabel('Time from Stimulation (s)');
+ylabel('\muV');
+title('Spike Triggered Average');
 
 %%
 % <latex>
@@ -142,15 +191,62 @@ compare_durations = durationInSec_1/durationInSec_0
 % </latex>
 
 %% 
-% Answer here. Be sure to add similar comment sections for your other answers
+% One approach to smoothing involves taking local averages of the signal in
+% order to reduce the effects of noise. In order to compute the amplitude
+% of the noise, we can remove the original signal from its smoothed version
+% and compute the magnitude of the resulting difference.
 
 %%
 % <latex>
 % 	\item Show with a few of the EPs (plots and/or otherwise) that your method gives reasonable results. (1 pt)
 % </latex>
 
+
 %% 
-% Answer here. Be sure to add similar comment sections for your other answers
+
+curr_start_time = 0;
+time_window = linspace(curr_start_time, curr_start_time + 1, window_size);
+noisy_signal = ep_windowed(:, curr_start_time + 1);
+smoothed_signal = smoothdata(noisy_signal, 'movmean', 50);
+noise = noisy_signal - smoothed_signal;
+mean_noise_amplitude_t1 = mean(abs(noise))
+
+figure;
+hold on
+plot(time_window, noise, 'Color', [0.7, 0.7, 0.7], 'LineWidth', 2)
+plot(time_window, noisy_signal, 'b', 'LineWidth', 2)
+plot(time_window, smoothed_signal, 'r', 'LineWidth', 2)
+legend('Noise', 'Noisy Signal', 'Smoothed Signal', 'Location', 'NorthEast');
+hold off
+xlabel('Time (s)');
+ylabel('\muV');
+title('Smoothed Signal for Trial 1');
+
+curr_start_time = 10;
+time_window = linspace(curr_start_time, curr_start_time + 1, window_size);
+noisy_signal = ep_windowed(:, curr_start_time + 1);
+smoothed_signal = smoothdata(noisy_signal, 'movmean', 50);
+noise = noisy_signal - smoothed_signal;
+mean_noise_amplitude_t11 = mean(abs(noise))
+
+figure;
+hold on
+plot(time_window, noise, 'Color', [0.7, 0.7, 0.7], 'LineWidth', 2)
+plot(time_window, noisy_signal, 'b', 'LineWidth', 2)
+plot(time_window, smoothed_signal, 'r', 'LineWidth', 2)
+legend('Noise', 'Noisy Signal', 'Smoothed Signal', 'Location', 'NorthEast');
+hold off
+xlabel('Time (s)');
+ylabel('\muV');
+title('Smoothed Signal for Trial 11');
+
+%% 
+
+% Consider trials 1 and 11. The red traces show the original signals. Blue 
+% traces are their denoised versions. For both figures, the denoised traces
+% appear smoother. The noise traces mark the difference between the
+% original and the smoothed signals, and in both instances seem to resemble
+% white noise.
 
 %%
 % <latex>
@@ -160,7 +256,11 @@ compare_durations = durationInSec_1/durationInSec_0
 % </latex>
 
 %% 
-% Answer here. Be sure to add similar comment sections for your other answers
+
+smoothed_all = smoothdata(ep_windowed, 'movmean', 50);
+noise_all = ep_windowed - smoothed_all;
+noise_amp_all = mean(abs(noise_all));
+mean_noise_amp = mean(noise_amp_all) % uV
 
 %%
 % <latex>
@@ -168,7 +268,11 @@ compare_durations = durationInSec_1/durationInSec_0
 % </latex>
 
 %% 
-% Answer here. Be sure to add similar comment sections for your other answers
+
+smoothed_sig_avg = smoothdata(spike_trig_avg, 'movmean', 50);
+noise_sig_avg = spike_trig_avg - smoothed_sig_avg;
+mean_noise_amplitude_sig_avg = mean(abs(noise_sig_avg)) % uV
+
 
 %%
 % <latex>
@@ -176,7 +280,12 @@ compare_durations = durationInSec_1/durationInSec_0
 % </latex>
 
 %% 
-% Answer here. Be sure to add similar comment sections for your other answers
+% The mean noise amplitude across all trials is 404.9 uV. For the signal
+% average EP, the noise amplitude is almost a factor of 10 lower at 56.1
+% uV. This makes sense since the process of taking the spike triggered
+% average implicitly denoises the data. Applying the smoothing process to
+% this already denoised data does not take away as much of the noise as it
+% does when applied to individual trials. 
 
 %%
 % <latex>

@@ -1,0 +1,329 @@
+
+% This LaTeX was auto-generated from an M-file by MATLAB.
+% To make changes, update the M-file and republish this document.
+
+\documentclass{article}
+\usepackage{graphicx}
+\usepackage{color}
+\usepackage{listings}
+\usepackage[framed]{mcode}
+\usepackage{fullpage}
+\usepackage{amsmath}
+\usepackage[utf8x]{inputenc}
+\usepackage{import}
+\usepackage{setspace}
+\usepackage{hyperref}
+\definecolor{lightgray}{gray}{0.5}
+\setlength{\parindent}{0pt}
+
+\begin{document}
+
+    
+    
+%\section*{}
+
+
+\title{BE 521: Homework 1 \\{\normalsize Exploring Neural Signals} \\{\normalsize Spring 2021}}
+\author{33 points}
+\date{Due: Tuesday 2/2/2021 10 PM}
+\maketitle
+\textbf{Objective:} Working with the IEEG Portal to explore different Neural signals
+
+
+\begin{center}
+\author{Shubhankar Patankar}
+\end{center}
+
+
+\section{Seizure Activity (16 pts)}
+The dataset \texttt{I521\_A0001\_D002} contains an example of human intracranial EEG (iEEG) data displaying seizure activity. It is recorded from a single channel (2 electrode contacts) implanted in the hippocampus of a patient with temporal lobe epilepsy being evaluated for surgery. In these patients, brain tissue where seizures are seen is often resected. You will do multiple comparisons with this iEEG data and the unit activity that you worked with in Homework 0 \texttt{(I521\_A0001\_D001)}. You will have to refer to that homework and/or dataset for these questions.
+\begin{enumerate}
+ \item Retrieve the dataset in MATLAB using the IEEGToolbox and generate a \emph{session} variable as before (No need to report the output this time). What is the sampling rate of this data? What is the maximum frequency of the signal content that we can resolve? (2 pts)
+
+
+
+\subsection*{Add HW folder and IEEG toolbox to path}
+
+\begin{lstlisting}
+cd('/Users/sppatankar/Developer/BE-521')
+addpath(genpath('ieeg-matlab-1.14.49'))
+addpath(genpath('Homework_0'))
+% password_file = IEEGSession.createPwdFile('spatank', '***');
+\end{lstlisting}
+\begin{lstlisting}
+session_2 = IEEGSession('I521_A0001_D002', 'spatank', 'spa_ieeglogin.bin');
+sampling_rate_2 = session_2.data.sampleRate % Hz
+max_frequency = sampling_rate_2/2
+\end{lstlisting}
+
+\color{lightgray} \begin{lstlisting}IEEGSETUP: Adding 'ieeg-matlab.jar' to dynamic classpath
+IEEGSETUP: Found log4j on Java classpath.
+URL: https://www.ieeg.org/services
+Client user: spatank
+Client password: ****
+
+sampling_rate_2 =
+
+   200
+
+
+max_frequency =
+
+   100
+
+\end{lstlisting} \color{black}
+
+ \item How does the duration of this recording compare with the recording from HW0 \texttt{(I521\_A0001\_D001)}? (2 pts)
+
+\begin{lstlisting}
+session_1 = IEEGSession('I521_A0001_D001', 'spatank', 'spa_ieeglogin.bin');
+durationInUSec_1 = session_1.data(1).rawChannels(1).get_tsdetails.getDuration;
+durationInSec_1 = durationInUSec_1/1e6;
+
+durationInUSec_2 = session_2.data(1).rawChannels(1).get_tsdetails.getDuration;
+durationInSec_2 = durationInUSec_2/1e6;
+
+compare_durations = durationInSec_2/durationInSec_1
+\end{lstlisting}
+
+\color{lightgray} \begin{lstlisting}IEEGSETUP: Adding 'ieeg-matlab.jar' to dynamic classpath
+Warning: Objects of edu/upenn/cis/db/mefview/services/TimeSeriesDetails
+class exist - not clearing java 
+Warning: Objects of edu/upenn/cis/db/mefview/services/TimeSeriesInterface
+class exist - not clearing java 
+IEEGSETUP: Found log4j on Java classpath.
+URL: https://www.ieeg.org/services
+Client user: spatank
+Client password: ****
+
+compare_durations =
+
+   64.4995
+
+\end{lstlisting} \color{black}
+Recording from \ensuremath{\backslash}texttt\{(I521\ensuremath{\backslash}\_A0001\ensuremath{\backslash}\_D002)\} is 65 times longer than the recording from \ensuremath{\backslash}texttt\{(I521\ensuremath{\backslash}\_A0001\ensuremath{\backslash}\_D001)\}.
+
+ \item Using the time-series visualization functionality of the IEEG Portal, provide a screenshot of the first 500 ms of data from this recording. (2 pts)
+
+
+\includegraphics[scale=0.25]{screenshot.png}
+
+
+ \item Compare the activity in this sample with the data from HW0. What differences do you notice in the amplitude and frequency characteristics? (2 pts)
+
+The time series in \ensuremath{\backslash}texttt\{(I521\ensuremath{\backslash}\_A0001\ensuremath{\backslash}\_D002)\} has a significantly higher amplitude than the one in \ensuremath{\backslash}texttt\{(I521\ensuremath{\backslash}\_A0001\ensuremath{\backslash}\_D001)\}. \ensuremath{\backslash}texttt\{(I521\ensuremath{\backslash}\_A0001\ensuremath{\backslash}\_D001)\} has higher frequency oscillations.
+
+ \item The unit activity sample in \texttt{(I521\_A0001\_D001)} was high-pass filtered to remove low-frequency content. Assume that the seizure activity in \texttt{(I521\_A0001\_D002)} has not been high-pass filtered. Given that the power of a frequency band scales roughly as $1/f$, how might these differences in preprocessing contribute to the differences you noted in the previous question? (There is no need to get into specific calculations here. We just want general ideas.) (3 pts)
+
+Based on the 1/f scaling factor, higher frequencies have lower power. Since \ensuremath{\backslash}texttt\{(I521\ensuremath{\backslash}\_A0001\ensuremath{\backslash}\_D001)\} was high-pass filtered leaving only its high frequency components, it has a generally low power. On the other hand, \ensuremath{\backslash}texttt\{(I521\ensuremath{\backslash}\_A0001\ensuremath{\backslash}\_D002)\} has its lower frequency components intact implying that it has high power. Acknowledging that power and amplitude are not the same but closely related, based on their respective frequency contents, it makes sense that \ensuremath{\backslash}texttt\{(I521\ensuremath{\backslash}\_A0001\ensuremath{\backslash}\_D001)\} has a lower amplitude on average than \ensuremath{\backslash}texttt\{(I521\ensuremath{\backslash}\_A0001\ensuremath{\backslash}\_D002)\}.
+
+ \item Two common methods of human iEEG are known as electrocorticography (ECoG) and stereoelectroencephalography (SEEG). For either of these paradigms (please indicate which you choose), find and report at least two of the following electrode characteristics: shape, material, size. Please note that exact numbers aren't required, and please cite any sources used. (3 pts)
+
+TO-DO
+
+ \item What is a local field potential? How might the characteristics of human iEEG electrodes cause them to record local field potentials as opposed to multiunit activity, which was the signal featured in HW0 as recorded from 40 micron Pt-Ir microwire electrodes? (2 pts)
+
+TO-DO
+
+\end{enumerate}
+
+
+\section{Evoked Potentials (17 pts)}
+The data in \texttt{I521\_A0001\_D003} contains an example of a very common type of experiment and neuronal signal, the evoked potential (EP). The data show the response of the whisker barrel cortex region of rat brain to an air puff stimulation of the whiskers. The \texttt{stim} channel shows the stimulation pattern, where the falling edge of the stimulus indicates the start of the air puff, and the rising edge indicates the end. The \texttt{ep} channel shows the corresponding evoked potential.
+Once again, play around with the data on the IEEG Portal, in particular paying attention to the effects of stimulation on EPs. You should observe the data with window widths of 60 secs as well as 1 sec. Again, be sure to explore the signal gain to get a more accurate picture. Finally, get a sense for how long the trials are (a constant duration) and how long the entire set of stimuli and responses are.
+
+
+\begin{enumerate}
+ \item Based on your observations, should we use all of the data or omit some of it? (There's no right answer, here, just make your case either way in a few sentences.) (2 pts)
+
+\begin{lstlisting}
+% In my view, using all of the data seems reasonable. No section of the
+% data is significantly better/worse than its other sections to justify
+% keeping/omiting it.
+\end{lstlisting}
+
+ \item Retrieve the \texttt{ep} and \texttt{stim} channel data in MATLAB. What is the average latency (in ms) of the peak response to the stimulus onset over all trials? (Assume stimuli occurs at exactly 1 second intervals)(3 pts)
+
+\begin{lstlisting}
+session_3 = IEEGSession('I521_A0001_D003', 'spatank', 'spa_ieeglogin.bin');
+
+sampling_rate_3 = session_3.data.sampleRate;
+
+start_time_3 = 0;
+end_time_3 = session_3.data.rawChannels(1).get_tsdetails.getEndTime/1e6; % s
+
+ep_nr = ceil(end_time_3*sampling_rate_3);
+ep = session_3.data.getvalues(1:ep_nr, 1);
+
+% stim_nr = ceil(end_time_3*sampling_rate_3);
+% stim = session_3.data.getvalues(1:stim_nr, 2);
+
+window_size = 1 * sampling_rate_3; % 1 s windows
+ep_windowed = reshape(ep, window_size, []);
+[~, max_time_idx] = max(ep_windowed);
+max_time = (max_time_idx./sampling_rate_3);
+latency_ms = mean(max_time) * 1000 % ms
+
+% curr_start_time = 0;
+% time_window = linspace(curr_start_time, curr_start_time + 1, window_size);
+% figure;
+% plot(time_window, ep_windowed(:, curr_start_time + 1))
+% xlabel('Time (s)');
+% ylabel('\muV');
+% title('EP Signal');
+\end{lstlisting}
+
+\color{lightgray} \begin{lstlisting}IEEGSETUP: Adding 'ieeg-matlab.jar' to dynamic classpath
+Warning: Objects of edu/upenn/cis/db/mefview/services/TimeSeriesDetails
+class exist - not clearing java 
+Warning: Objects of edu/upenn/cis/db/mefview/services/TimeSeriesInterface
+class exist - not clearing java 
+IEEGSETUP: Found log4j on Java classpath.
+URL: https://www.ieeg.org/services
+Client user: spatank
+Client password: ****
+
+latency_ms =
+
+  162.1508
+
+\end{lstlisting} \color{black}
+
+ \item In neuroscience, we often need to isolate a small neural signal buried under an appreciable amount of noise.  One technique to accomplish this is called the spike triggered average, sometimes called signal averaging. This technique assumes that the neural response to a repetitive stimulus is constant (or nearly so), while the noise fluctuates from trial to trial - therefore averaging the evoked response over many trials will isolate the signal and average out the noise.
+ Construct a spike triggered average plot for the data in \texttt{I521\_A0001\_D003}.  Plot the average EP in red.  Using the commands \texttt{hold on} and \texttt{hold off} as well as \texttt{errorbar} and \texttt{plot}, overlay error bars at each time point on the plot to indicate the standard deviation of the responses at any given time point.  Plot the standard deviation error bars in gray (RGB value: [0.7 0.7 0.7]). Make sure to give a proper legend along with your labels. (4 pts)
+
+\begin{lstlisting}
+spike_trig_avg = mean(ep_windowed, 2);
+time_window = linspace(0, 1, length(spike_trig_avg));
+figure;
+hold on
+errorbar(time_window, spike_trig_avg, std(ep_windowed, [], 2), ...
+    'Color', [0.7, 0.7, 0.7]);
+plot(time_window, spike_trig_avg, 'r', 'LineWidth', 2)
+legend('\sigma', 'STA', 'Location', 'NorthEast');
+hold off
+xlabel('Time from Stimulation (s)');
+ylabel('\muV');
+title('Spike Triggered Average');
+\end{lstlisting}
+
+
+\includegraphics [width=5in]{spatank_hw1_01.png}
+
+ \item
+  \begin{enumerate}
+	\item We often want to get a sense for the amplitude of the noise in a single trial. Propose a method to do this (there are a few reasonably simple methods, so no need to get too complicated). Note: do not assume that the signal averaged EP is the ``true'' signal and just subtract it from that of each trial, because whatever method you propose should be able to work on the signal from a single trial or from the average of the trials. (4 pts)
+
+One approach to smoothing involves taking local averages of the signal in order to reduce the effects of noise. In order to compute the amplitude of the noise, we can remove the original signal from its smoothed version and compute the magnitude of the resulting difference.
+
+	\item Show with a few of the EPs (plots and/or otherwise) that your method gives reasonable results. (1 pt)
+
+\begin{lstlisting}
+curr_start_time = 0;
+time_window = linspace(curr_start_time, curr_start_time + 1, window_size);
+noisy_signal = ep_windowed(:, curr_start_time + 1);
+smoothed_signal = smoothdata(noisy_signal, 'movmean', 50);
+noise = noisy_signal - smoothed_signal;
+mean_noise_amplitude_t1 = mean(abs(noise))
+
+figure;
+hold on
+plot(time_window, noise, 'Color', [0.7, 0.7, 0.7], 'LineWidth', 2)
+plot(time_window, noisy_signal, 'b', 'LineWidth', 2)
+plot(time_window, smoothed_signal, 'r', 'LineWidth', 2)
+legend('Noise', 'Noisy Signal', 'Smoothed Signal', 'Location', 'NorthEast');
+hold off
+xlabel('Time (s)');
+ylabel('\muV');
+title('Smoothed Signal for Trial 1');
+
+curr_start_time = 10;
+time_window = linspace(curr_start_time, curr_start_time + 1, window_size);
+noisy_signal = ep_windowed(:, curr_start_time + 1);
+smoothed_signal = smoothdata(noisy_signal, 'movmean', 50);
+noise = noisy_signal - smoothed_signal;
+mean_noise_amplitude_t11 = mean(abs(noise))
+
+figure;
+hold on
+plot(time_window, noise, 'Color', [0.7, 0.7, 0.7], 'LineWidth', 2)
+plot(time_window, noisy_signal, 'b', 'LineWidth', 2)
+plot(time_window, smoothed_signal, 'r', 'LineWidth', 2)
+legend('Noise', 'Noisy Signal', 'Smoothed Signal', 'Location', 'NorthEast');
+hold off
+xlabel('Time (s)');
+ylabel('\muV');
+title('Smoothed Signal for Trial 11');
+\end{lstlisting}
+
+\color{lightgray} \begin{lstlisting}
+mean_noise_amplitude_t1 =
+
+  414.0738
+
+
+mean_noise_amplitude_t11 =
+
+  416.4319
+
+\end{lstlisting} \color{black}
+
+
+\includegraphics [width=5in]{spatank_hw1_02.png}
+
+
+\includegraphics [width=5in]{spatank_hw1_03.png}
+\begin{lstlisting}
+% Consider trials 1 and 11. The red traces show the original signals. Blue
+% traces are their denoised versions. For both figures, the denoised traces
+% appear smoother. The noise traces mark the difference between the
+% original and the smoothed signals, and in both instances seem to resemble
+% white noise.
+\end{lstlisting}
+
+	\item
+    \begin{enumerate}
+        \item Apply your method on each individual trial and report the mean noise amplitude across all trials. (1 pt)
+
+\begin{lstlisting}
+smoothed_all = smoothdata(ep_windowed, 'movmean', 50);
+noise_all = ep_windowed - smoothed_all;
+noise_amp_all = mean(abs(noise_all));
+mean_noise_amp = mean(noise_amp_all) % uV
+\end{lstlisting}
+
+\color{lightgray} \begin{lstlisting}
+mean_noise_amp =
+
+  404.8957
+
+\end{lstlisting} \color{black}
+
+        \item Apply your method on the signal averaged EP and report its noise. (1 pt)
+
+\begin{lstlisting}
+smoothed_sig_avg = smoothdata(spike_trig_avg, 'movmean', 50);
+noise_sig_avg = spike_trig_avg - smoothed_sig_avg;
+mean_noise_amplitude_sig_avg = mean(abs(noise_sig_avg)) % uV
+\end{lstlisting}
+
+\color{lightgray} \begin{lstlisting}
+mean_noise_amplitude_sig_avg =
+
+   56.0538
+
+\end{lstlisting} \color{black}
+
+	    \item Do these two values make sense? Explain. (1 pt)
+
+The mean noise amplitude across all trials is 404.9 uV. For the signal average EP, the noise amplitude is almost a factor of 10 lower at 56.1 uV. This makes sense since the process of taking the spike triggered average implicitly denoises the data. Applying the smoothing process to this already denoised data does not take away as much of the noise as it does when applied to individual trials.
+
+    \end{enumerate}
+  \end{enumerate}
+\end{enumerate}
+
+
+
+
+\end{document}
+    
