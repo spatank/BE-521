@@ -1,4 +1,7 @@
 %%
+
+clc; close all; clear;
+
 % <latex>
 % \title{BE 521: Homework 3 Questions\\{\normalsize Feature extraction} \\{\normalsize Spring 2021}}
 % \author{68 points}
@@ -10,8 +13,8 @@
 %% 
 % <latex>
 % \begin{center}
-% \author{NAME HERE \\
-%   \normalsize Collaborators: COLLABORATORS HERE \\}
+% \author{Shubhankar Patankar \\
+%   \normalsize Collaborators: Peter Galer \\}
 % \end{center}
 % </latex>
 
@@ -32,6 +35,23 @@
 %    \item Plot the signal. (2 pts)
 % </latex>
 
+cd('/Users/sppatankar/Developer/BE-521')
+addpath(genpath('Homework_3'));
+
+duration = 7; % s
+sampling_rate = 100; % Hz
+dt = 1/sampling_rate;
+time = 0:dt:7-dt;
+signal_frequency = 2; % Hz
+period = 1/signal_frequency;
+toy_signal = sin((2 * pi * signal_frequency * (time + (0.25 * period))));
+
+figure;
+plot(time, toy_signal, 'LineWidth', 1, 'Color', [0, 0, 0])
+xlabel('Time (s)', 'FontSize', 15);
+ylabel('Signal', 'FontSize', 15);
+title('Toy Signal', 'FontSize', 15);
+
 %%
 % <latex>
 % \item Using the Matlab functions for the difference, sum, and
@@ -48,6 +68,10 @@
 %    \item What is the line length of this signal? (2 pts)
 %   \end{enumerate}
 % </latex>
+
+LLFn = @(x) sum(abs(diff(x)));
+line_length_signal = LLFn(toy_signal);
+fprintf('1(c) Total Line Length = %0.2f\n', line_length_signal);
 
 %%
 % <latex>
@@ -69,6 +93,11 @@
 % 	and the length (in seconds) of \texttt{x}. (4 pts) 
 % </latex>
 
+
+% https://cs231n.github.io/convolutional-networks/
+NumWins = @(xLen, fs, winLen, winDisp) ...
+    ((xLen - (winLen * fs))/(winDisp * fs) + 1);
+
 %%
 % <latex>
 %   \item Use this
@@ -80,16 +109,29 @@
 % 	where \texttt{fs}, \texttt{winLen}, and \texttt{winDisp} are the appropriate values. (1 pt)
 % </latex>
 
+winLen = 0.4; % window size (s)
+winDisp = 0.2; % window displacement (s)
+
+fprintf('2(b) Number of Windows = %.2f\n', ...
+    NumWins(length(toy_signal), sampling_rate, winLen, winDisp));
+
+
 %%
 % <latex>
 % 	\item Repeat the above calculation for 50 ms window displacement. (1 pt)
 % </latex>
+
+fprintf('2(c) Number of Windows = %.2f\n', ...
+    NumWins(length(toy_signal), sampling_rate, winLen, 50/1000));
 
 %%
 % <latex>
 % 	\item Repeat the above calculation for 100 ms window displacement. (1 pt)
 %   \end{enumerate}
 % </latex>
+
+fprintf('2(d) Number of Windows = %.2f\n', ...
+    NumWins(length(toy_signal), sampling_rate, winLen, 100/1000));
 
 %%
 % <latex> 
@@ -123,11 +165,20 @@
 %    \item Using the signal you defined in Question 1.1 and the function you created in Question 1.1.b, calculate the line-length over windows of length 400 ms and displacement 200 ms. (2 pts)
 % </latex>
 
+winLen = 0.4; % s
+winDisp = 0.2; % s
+LL = MovingWinFeats(toy_signal, sampling_rate, winLen, winDisp, LLFn);
+
 %%
 % <latex>
 %    \item Add a unit-amplitude 10 Hz signal (in the form of a sine wave) to your original signal and again calculate the line length over the same window and displacement. (2 pts)
 %   \end{enumerate}
 % </latex>
+
+new_signal_frequency = 10; % Hz
+new_toy_signal = toy_signal + sin((2 * pi * new_signal_frequency * time));
+
+new_LL = MovingWinFeats(new_toy_signal, sampling_rate, winLen, winDisp, LLFn);
 
 %%
 % <latex>
@@ -136,10 +187,16 @@
 %    \item Area, $\displaystyle A(\mathbf{x}) = \sum_{i=1}^{n} |x_i| $ \quad (2 pts)
 % </latex>
 
+areaFn = @(x) sum(abs(x));
+new_area = MovingWinFeats(new_toy_signal, sampling_rate, winLen, winDisp, areaFn);
+
 %%
 % <latex>
 %    \item Energy, $\displaystyle E(\mathbf{x}) = \sum_{i=1}^{n} x_i^2 $ \quad (2 pts)
 % </latex>
+
+energyFn = @(x) sum(x.^2);
+new_energy = MovingWinFeats(new_toy_signal, sampling_rate, winLen, winDisp, energyFn);
 
 %%
 % <latex>
@@ -149,6 +206,9 @@
 %        $\mathbf{FromBelow}$ denotes $(x_{i-1} - \overline{x} < 0) \;\mbox{AND}\; (x_i - \overline{x} > 0)$,
 %        and $\overline{x}$ is the mean value of the elements in $x$. (4 pts)
 % </latex>
+
+ZCFn = @(x) sum(diff(sign(x - mean(x))) ~= 0);
+new_ZC = MovingWinFeats(new_toy_signal, sampling_rate, winLen, winDisp, ZCFn);
 
 %%
 % <latex>
@@ -162,6 +222,55 @@
 %    of your plots is the same. (6 pts)
 % </latex>
 
+num_wins =  NumWins(length(toy_signal), sampling_rate, winLen, winDisp);
+time_feats = zeros(1, num_wins);
+win_start_idx = 1;
+for i = 1:num_wins
+    win_end_idx = win_start_idx + (winLen * sampling_rate) - 1;
+    time_feats(i) = time(win_end_idx);
+    win_start_idx = win_start_idx + (winDisp * sampling_rate);
+end
+
+figure;
+hold on
+subplot(3, 2, 1)
+% scatter(time_feats, new_LL, 10, [0, 0, 0], 'filled')
+plot(time_feats, new_LL, 'LineWidth', 0.7, 'Color', [0, 0, 0])
+xlim([0, duration])
+xlabel('Time (s)', 'FontSize', 15);
+ylabel('Line Length', 'FontSize', 15);
+
+subplot(3, 2, 2)
+plot(time_feats, new_area, 'LineWidth', 0.7, 'Color', [0, 0, 0])
+xlim([0, duration])
+xlabel('Time (s)', 'FontSize', 15);
+ylabel('Area', 'FontSize', 15);
+
+subplot(3, 2, 3)
+plot(time_feats, new_energy, 'LineWidth', 0.7, 'Color', [0, 0, 0])
+xlim([0, duration])
+xlabel('Time (s)', 'FontSize', 15);
+ylabel('Energy', 'FontSize', 15);
+
+subplot(3, 2, 4)
+plot(time_feats, new_ZC, 'LineWidth', 0.7, 'Color', [0, 0, 0])
+xlim([0, duration])
+xlabel('Time (s)', 'FontSize', 15);
+ylabel('Zero Crossings', 'FontSize', 15);
+
+subplot(3, 2, 5)
+plot(time, new_toy_signal, 'LineWidth', 0.7, 'Color', [0, 0, 0])
+xlim([0, duration])
+xlabel('Time (s)', 'FontSize', 15);
+ylabel('Signal', 'FontSize', 15);
+
+subplot(3, 2, 6)
+plot(time, new_toy_signal, 'LineWidth', 0.7, 'Color', [0, 0, 0])
+xlim([0, duration])
+xlabel('Time (s)', 'FontSize', 15);
+ylabel('Signal', 'FontSize', 15);
+
+
 %%
 % <latex>
 %   \end{enumerate}
@@ -172,10 +281,44 @@
 %  \item What is the length using hours:minutes:seconds:milliseconds of the recording? (Use getDuration) (2 pts)
 % </latex>
 
+addpath(genpath('ieeg-matlab-1.14.49'))
+
+session_1 = IEEGSession('I521_A0003_D001', 'spatank', 'spa_ieeglogin.bin');
+IEEG_signal_duration = session_1.data(1).rawChannels(1).get_tsdetails.getDuration;
+IEEG_signal_duration = IEEG_signal_duration/1000; % ms
+
+hours = floor(IEEG_signal_duration/(60 * 60 * 1000));
+remainder = rem(IEEG_signal_duration, 60 * 60 * 1000);
+
+minutes = floor(remainder/(60 * 1000));
+remainder = rem(remainder, 60 * 1000);
+
+seconds = floor(remainder/1000);
+milliseconds = rem(remainder, 1000);
+
+fprintf('I521_A0003_D001: Duration = %.0f:%.0f:%.0f:%.0f\n', ...
+    hours, minutes, seconds, milliseconds);
+
 %%
 % <latex>
 %  \item How many data points should we discard at the end if we want to clip the recording to the last full second? Do this clipping. (1 pt)
 % </latex>
+
+remove_duration = milliseconds/1000; % s
+sampling_rate = session_1.data.sampleRate;
+remove_points = (remove_duration * sampling_rate) + 1;
+
+end_time = session_1.data.rawChannels(1).get_tsdetails.getEndTime/1e6; % s
+chirp_signal = session_1.data.getvalues(1:ceil(end_time * sampling_rate), 1);
+
+fprintf('Remove %d points to clip to nearest second.\n', remove_points);
+
+all_seconds = (hours * 60 * 60) + (minutes * 60) + seconds;
+
+dt = 1/sampling_rate;
+chirp_time = 0:dt:all_seconds - dt;
+
+chirp_signal = chirp_signal(1:end-remove_points); % clipped to nearest second
 
 %%
 % <latex>
@@ -194,6 +337,10 @@
 %  \end{enumerate}
 % </latex>
 
+figure;
+plot(zoInterp(1:5, 5), '-o', 'LineWidth', 1, 'Color', [0, 0, 0])
+title('Replication Test', 'FontSize', 15);
+
 %%
 % <latex>
 %  \item Using a 5-second sliding window with 1-second displacement,
@@ -208,6 +355,31 @@
 %  up any signal or feature. (6 pts)
 % </latex>
 
+winLen = 5; % s
+winDisp = 1; % s
+
+LL_chirp = MovingWinFeats(chirp_signal, sampling_rate, winLen, winDisp, LLFn);
+LL_chirp_interp = [LL_chirp(1) .* ones(1, (winLen - winDisp) .* sampling_rate), ...
+    repelem(LL_chirp, winDisp * sampling_rate)];
+
+LL_chirp_norm = (LL_chirp .* 2 .* max(chirp_signal))./max(LL_chirp);
+
+LL_chirp_norm_interp = [LL_chirp_norm(1) .* ones(1, (winLen - winDisp) .* sampling_rate), ...
+    repelem(LL_chirp_norm, winDisp * sampling_rate)];
+
+figure;
+hold on
+chirp_time_mins = chirp_time ./ 60;
+plot(chirp_time_mins, chirp_signal, 'LineWidth', 2, ...
+    'Color', 'b');
+plot(chirp_time_mins, LL_chirp_norm_interp, 'LineWidth', 2, ...
+    'Color', 'y');
+xlim([0, chirp_time_mins(end)])
+legend('Signal', 'Normalized Line Length', 'Location', 'NorthWest');
+hold off
+xlabel('Time (min)', 'FontSize', 15);
+title('Normalized Line Length for I521\_A0003\_D001', 'FontSize', 15);
+
 %%
 % <latex>
 %  \item What threshold might you use on the raw line-length feature
@@ -215,10 +387,58 @@
 %  capture the 17 largest pre-seizure chirps that occur? (1 pt)
 % </latex>
 
+figure;
+plot(chirp_time_mins, LL_chirp_interp, 'LineWidth', 2, ...
+    'Color', 'k');
+xlabel('Time (min)', 'FontSize', 15);
+title('Line Length (I521\_A0003\_D001)', 'FontSize', 15);
+
+threshold = 42000; % for 17 pre-seizure chirps
+% threshold = 44000; % for 16 pre-seizure chirps + seizure onset
+fprintf('Threshold = %.1f for 17 chirps.\n', threshold);
+
 %%
 % <latex>
 %  \item Using this threshold value, in another plot draw red vertical lines at the leading point in time where the threshold is crossed. Add these vertical lines on top of the plot you made in Question 2.4. These events should capture the pre-seizure chirps, the seizure onset, and some flickering during the end of the seizure. (3 pts)
 % </latex>
+
+% inds_df_2 = diff(diff(LL_chirp_interp) < 0);
+% inds_thresh = LL_chirp_interp(1:end-1) > threshold;
+% inds = find(inds_df_2 .* inds_thresh);
+
+LL_chirp_interp_smooth = smoothdata(LL_chirp_interp, 'movmean', 50);
+inds_df = diff(LL_chirp_interp_smooth) > 0;
+inds_thresh = LL_chirp_interp_smooth(1:end-1) > threshold;
+inds = find(inds_df .* inds_thresh);
+
+% inds_df = diff(LL_chirp_interp) > 0;
+% inds_thresh = LL_chirp_interp(1:end-1) > threshold;
+% inds = find(inds_df .* inds_thresh);
+
+figure;
+hold on
+chirp_time_mins = chirp_time ./ 60;
+plot(chirp_time_mins, chirp_signal, 'LineWidth', 2, ...
+    'Color', 'b');
+plot(chirp_time_mins, LL_chirp_norm_interp, 'LineWidth', 2, ...
+    'Color', 'y');
+plot([chirp_time_mins(inds); chirp_time_mins(inds)], ...
+    repmat(ylim', 1, size(inds, 2)), '-r')
+xlim([0, chirp_time_mins(end)])
+legend('Signal', 'Normalized Line Length', 'Location', 'NorthWest');
+hold off
+xlabel('Time (min)', 'FontSize', 15);
+title('Normalized Line Length (I521\_A0003\_D001)', 'FontSize', 15);
+
+% figure;
+% hold on
+% plot(chirp_time_mins, LL_chirp_interp, 'LineWidth', 2, ...
+%     'Color', 'k');
+% plot([chirp_time_mins(inds); chirp_time_mins(inds)], ...
+%     repmat(ylim', 1, size(inds, 2)), '-r')
+% hold off
+% xlabel('Time (min)', 'FontSize', 15);
+% title('Line Length (I521\_A0003\_D001)', 'FontSize', 15);
 
 %%
 % <latex>
@@ -229,10 +449,110 @@
 %  \item Plot the signal in \texttt{multiSz\_1} and draw vertical red lines at the times when you think the two seizures begin. (You should be able to do this without the need of any features.) (2 pts)
 % </latex>
 
+session_2 = IEEGSession('I521_A0003_D002', 'spatank', 'spa_ieeglogin.bin');
+signal_duration = session_2.data(1).rawChannels(1).get_tsdetails.getDuration;
+sampling_rate = session_2.data.sampleRate;
+
+end_time = session_2.data.rawChannels(1).get_tsdetails.getEndTime/1e6; % s
+multiSz_1 = session_2.data.getvalues(1:ceil(end_time * sampling_rate), 1);
+
+dt = 1/sampling_rate;
+time_multiSz_1 = 0:dt:end_time;
+
+seizure_inds = [755, 9382];
+
+figure;
+hold on
+plot(time_multiSz_1, multiSz_1, 'LineWidth', 1, 'Color', [0, 0, 0])
+plot([seizure_inds; seizure_inds], ...
+    repmat(ylim', 1, size(seizure_inds, 2)), '-r', 'LineWidth', 2)
+hold off
+xlabel('Time (s)', 'FontSize', 15);
+ylabel('Signal', 'FontSize', 15);
+title('Channel 1 (I521\_A0003\_D002)', 'FontSize', 15);
+
 %%
 % <latex>
 %  \item Produce feature overlay plots similar to that of Question 2.4 for each of the four features you have implemented along with the red vertical lines at each seizure. Use the same 4-second sliding window with 1 second displacement. (4 pts)
 % </latex>
+
+winLen = 0.4; % s
+winDisp = 0.1; % s
+
+multiSz_1_LL = MovingWinFeats(multiSz_1, sampling_rate, winLen, winDisp, LLFn);
+multiSz_1_area = MovingWinFeats(multiSz_1, sampling_rate, winLen, winDisp, areaFn);
+multiSz_1_energy = MovingWinFeats(multiSz_1, sampling_rate, winLen, winDisp, energyFn);
+multiSz_1_ZC = MovingWinFeats(multiSz_1, sampling_rate, winLen, winDisp, ZCFn);
+
+multiSz_1_LL_interp = [multiSz_1_LL(1) .* ...
+    ones(1, round((winLen - winDisp) .* sampling_rate)), ...
+    repelem(multiSz_1_LL, winDisp * sampling_rate)];
+multiSz_1_area_interp = [multiSz_1_area(1) .* ...
+    ones(1, round((winLen - winDisp) .* sampling_rate)), ...
+    repelem(multiSz_1_area, winDisp * sampling_rate)];
+multiSz_1_energy_interp = [multiSz_1_energy(1) .* ...
+    ones(1, round((winLen - winDisp) .* sampling_rate)), ...
+    repelem(multiSz_1_energy, winDisp * sampling_rate)];
+multiSz_1_ZC_interp = [multiSz_1_ZC(1) .* ...
+    ones(1, round((winLen - winDisp) .* sampling_rate)), ...
+    repelem(multiSz_1_ZC, winDisp * sampling_rate)];
+
+% multiSz_1_LL_interp = (multiSz_1_LL_interp .* 2 .* max(multiSz_1))./max(multiSz_1_LL_interp);
+% multiSz_1_area_interp = (multiSz_1_area_interp .* 2 .* max(multiSz_1))./max(multiSz_1_area_interp);
+% multiSz_1_energy_interp = (multiSz_1_energy_interp .* 2 .* max(multiSz_1))./max(multiSz_1_energy_interp);
+% multiSz_1_ZC_interp = (multiSz_1_ZC_interp .* 2 .* max(multiSz_1))./max(multiSz_1_ZC_interp);
+
+figure;
+hold on
+% plot(time_multiSz_1, multiSz_1, 'LineWidth', 1, 'Color', [0.7, 0.7, 0.7])
+plot(time_multiSz_1, multiSz_1_LL_interp, 'LineWidth', 0.27, 'Color', [0, 0, 0])
+plot([seizure_inds; seizure_inds], ...
+    repmat(ylim', 1, size(seizure_inds, 2)), '-r', 'LineWidth', 2)
+hold off
+xlim([0, end_time])
+% legend('Raw Signal', 'Normalized Line Length', 'Location', 'NorthEast')
+title('Line Length (I521\_A0003\_D002 Ch. 1)', 'FontSize', 15);
+xlabel('Time (s)', 'FontSize', 15);
+ylabel('Line Length', 'FontSize', 15);
+
+figure;
+hold on
+% plot(time_multiSz_1, multiSz_1, 'LineWidth', 1, 'Color', [0.7, 0.7, 0.7])
+plot(time_multiSz_1, multiSz_1_area_interp, 'LineWidth', 0.27, 'Color', [0, 0, 0])
+plot([seizure_inds; seizure_inds], ...
+    repmat(ylim', 1, size(seizure_inds, 2)), '-r', 'LineWidth', 2)
+hold off
+xlim([0, end_time])
+% legend('Raw Signal', 'Normalized Area', 'Location', 'NorthEast')
+title('Area (I521\_A0003\_D002 Ch. 1)', 'FontSize', 15);
+xlabel('Time (s)', 'FontSize', 15);
+ylabel('Area', 'FontSize', 15);
+
+figure;
+hold on
+% plot(time_multiSz_1, multiSz_1, 'LineWidth', 1, 'Color', [0.7, 0.7, 0.7])
+plot(time_multiSz_1, multiSz_1_energy_interp, 'LineWidth', 0.27, 'Color', [0, 0, 0])
+plot([seizure_inds; seizure_inds], ...
+    repmat(ylim', 1, size(seizure_inds, 2)), '-r', 'LineWidth', 2)
+hold off
+xlim([0, end_time])
+% legend('Raw Signal', 'Normalized Energy', 'Location', 'NorthEast')
+title('Energy (I521\_A0003\_D002 Ch. 1)', 'FontSize', 15);
+xlabel('Time (s)', 'FontSize', 15);
+ylabel('Energy', 'FontSize', 15);
+
+figure;
+hold on
+% plot(time_multiSz_1, multiSz_1, 'LineWidth', 1, 'Color', [0.7, 0.7, 0.7])
+plot(time_multiSz_1, multiSz_1_ZC_interp, 'LineWidth', 0.27, 'Color', [0, 0, 0])
+plot([seizure_inds; seizure_inds], ...
+    repmat(ylim', 1, size(seizure_inds, 2)), '-r', 'LineWidth', 2)
+hold off
+xlim([0, end_time])
+% legend('Raw Signal', 'Normalized Zero Crossings', 'Location', 'SouthEast')
+title('Zero Crossings (I521\_A0003\_D002 Ch. 1)', 'FontSize', 15);
+xlabel('Time (s)', 'FontSize', 15);
+ylabel('Zero Crossings', 'FontSize', 15);
 
 %%
 % <latex>
@@ -243,10 +563,20 @@
 %    background) for when a seizure occurs? Explain why you think this feature is the best. (3 pts)
 % </latex>
 
+% Energy seems to give the largest signal relative to the background before
+% a seizure. There are significant pre-seizure spikes in line length, area,
+% and energy. However, the difference in values between the spike and the
+% mean for line length and area is much smaller compared to the same
+% difference for energy. Zero crossings on the other are much noisier
+% compared to the other three features.
+
 %%
 % <latex>
 %    \item What threshold would you use to determine if a seizure is occurring? (1 pt)
 % </latex>
+
+% Energy exceeding 50000000 is a strong indicator of an imminent seizure. 
+threshold = 50000000; % energy threshold for seizure 
 
 %%
 % <latex>
@@ -257,6 +587,39 @@
 % <latex>
 %  \item The signal in \texttt{multiSz\_2} contains another seizure (whose location should again be fairly obvious). Plot the data along with the feature and threshold (horizontal black line, with correct normalization for the signal in \texttt{data2}) you determined in the previous question. (2 pts)
 % </latex>
+
+signal_duration = session_2.data(1).rawChannels(2).get_tsdetails.getDuration;
+signal_duration = signal_duration/1e6; % s
+sampling_rate = session_2.data.sampleRate;
+
+end_time = session_2.data.rawChannels(2).get_tsdetails.getEndTime/1e6; % s
+multiSz_2 = session_2.data.getvalues(1:ceil(end_time * sampling_rate), 2);
+
+dt = 1/sampling_rate;
+time_multiSz_2 = 0:dt:end_time;
+
+winLen = 0.4; % s
+winDisp = 0.1; % s
+
+multiSz_2_energy = MovingWinFeats(multiSz_2, sampling_rate, winLen, winDisp, energyFn);
+multiSz_2_energy_interp = [multiSz_2_energy(1) .* ...
+    ones(1, round((winLen - winDisp) .* sampling_rate)), ...
+    repelem(multiSz_2_energy, winDisp * sampling_rate)];
+
+multiSz_2_norm = (multiSz_2 .* 0.5 .* max(multiSz_2_energy_interp))./max(multiSz_2);
+
+figure;
+hold on
+plot(time_multiSz_2, multiSz_2_norm, 'LineWidth', 1, 'Color', 'b')
+plot(time_multiSz_2, multiSz_2_energy_interp, 'LineWidth', 1, ...
+    'Color', 'r')
+line([0, time_multiSz_2(end)], [threshold, threshold], 'LineWidth', 1, ...
+    'Color', [0, 0, 0])
+hold off
+legend('Normalized Signal', 'Energy', 'Threshold', 'Location', 'NorthEast');
+xlabel('Time (s)', 'FontSize', 15);
+% ylabel('Signal', 'FontSize', 15);
+title('Channel 2 (I521\_A0003\_D002)', 'FontSize', 15);
 
 %%
 % <latex>
