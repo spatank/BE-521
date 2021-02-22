@@ -1,7 +1,5 @@
 %%
 
-clc; close all; clear;
-
 % <latex>
 % \title{BE 521: Homework 3 Questions\\{\normalsize Feature extraction} \\{\normalsize Spring 2021}}
 % \author{68 points}
