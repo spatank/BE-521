@@ -1,5 +1,3 @@
-clc; close all; clear;
-
 %%
 % <latex> \title{BE 521: Homework 4 \\{\normalsize HFOs}
 % \\{\normalsize Spring 2021}} \author{58 points} \date{Due: Tuesday,
@@ -76,11 +74,11 @@ artifact_num = 0;
     getAnnotations(session.data, session.data.annLayer(1, 1).name);
 train_cell_array = cell(1, length(all_train_events));
 for i = 1:length(all_train_events)
-    if all_train_events(1, i).description == '1'
+    if all_train_events(1, i).description == '2'
         hfo_num = hfo_num + 1;
         train_cell_array{1, i}.description = all_train_events(1, i).description;
     end
-    if all_train_events(1, i).description == '2'
+    if all_train_events(1, i).description == '1'
         artifact_num = artifact_num + 1;
         train_cell_array{1, i}.description = all_train_events(1, i).description;
     end
@@ -133,7 +131,7 @@ hfo_idx = 0;
 while first_hfo ~= 1
     hfo_idx = hfo_idx + 1;
     label = train_cell_array{1, hfo_idx}.description;
-    if label == '1' % HFO found
+    if label == '2' % HFO found
         first_hfo = 1;
     end
 end
@@ -143,7 +141,7 @@ artifact_idx = 0;
 while first_artifact ~= 1
     artifact_idx = artifact_idx + 1;
     label = train_cell_array{1, artifact_idx}.description;
-    if label == '2' % artifact found
+    if label == '1' % artifact found
         first_artifact = 1;
     end
 end
@@ -294,8 +292,8 @@ end
 
 figure;
 gscatter(trainFeats(:, 1), trainFeats(:, 2), trainLabels, 'br');
-xlabel('Line Length', 'FontSize', 15);
-ylabel('Area', 'FontSize', 15);
+xlabel('Line Length (AU)', 'FontSize', 15);
+ylabel('Area (AU)', 'FontSize', 15);
 legend('HFO', 'Artifact', 'Location', 'SouthEast');
 title('Feature Space', 'FontSize', 15);
 
@@ -503,8 +501,8 @@ gscatter(trainFeatsNorm(:, 1), trainFeatsNorm(:, 2), trainLabels, 'br');
 hold off
 xlim([min(X(:)), max(X(:))])
 ylim([min(Y(:)), max(Y(:))])
-xlabel('Line Length', 'FontSize', 15);
-ylabel('Area', 'FontSize', 15);
+xlabel('Line Length (AU)', 'FontSize', 15);
+ylabel('Area (AU)', 'FontSize', 15);
 legend('HFO', 'Artifact', 'HFO (data)', 'Artifact (data)', 'Location', 'NW');
 title('Decision Space (Logistic Regression)', 'FontSize', 15);
 
@@ -515,8 +513,8 @@ gscatter(trainFeatsNorm(:, 1), trainFeatsNorm(:, 2), trainLabels, 'br');
 hold off
 xlim([min(X(:)), max(X(:))])
 ylim([min(Y(:)), max(Y(:))])
-xlabel('Line Length', 'FontSize', 15);
-ylabel('Area', 'FontSize', 15);
+xlabel('Line Length (AU)', 'FontSize', 15);
+ylabel('Area (AU)', 'FontSize', 15);
 legend('HFO', 'Artifact', 'HFO (data)', 'Artifact (data)', 'Location', 'NW');
 title('Decision Space (kNN)', 'FontSize', 15);
 
@@ -527,8 +525,8 @@ gscatter(trainFeatsNorm(:, 1), trainFeatsNorm(:, 2), trainLabels, 'br');
 hold off
 xlim([min(X(:)), max(X(:))])
 ylim([min(Y(:)), max(Y(:))])
-xlabel('Line Length', 'FontSize', 15);
-ylabel('Area', 'FontSize', 15);
+xlabel('Line Length (AU)', 'FontSize', 15);
+ylabel('Area (AU)', 'FontSize', 15);
 legend('HFO', 'Artifact', 'HFO (data)', 'Artifact (data)', 'Location', 'NW');
 title('Decision Space (SVM)', 'FontSize', 15);
 
@@ -671,10 +669,12 @@ for i = 1:length(ks)
             'NumNeighbors', k);
 
         fold_train_labels_pred = predict(Mdl_kNN, fold_train_data);
-        train_errors_CV(j) = sum(fold_train_labels ~= fold_train_labels_pred)/length(fold_train_labels);
+        train_errors_CV(j) = sum(fold_train_labels ~= ...
+            fold_train_labels_pred)/length(fold_train_labels);
 
         fold_val_labels_pred = predict(Mdl_kNN, fold_val_data);
-        val_errors_CV(j) = sum(fold_val_labels ~= fold_val_labels_pred)/length(fold_val_labels);
+        val_errors_CV(j) = sum(fold_val_labels ~= ...
+            fold_val_labels_pred)/length(fold_val_labels);
     end
     train_errors_ks(i) = mean(train_errors_CV);
     val_errors_ks(i) = mean(val_errors_CV);
@@ -687,6 +687,7 @@ plot(ks, val_errors_ks, 'b-o', 'LineWidth', 2);
 legend('Training Error', 'Validation Error', 'Location', 'SouthEast');
 hold off
 xlabel('k', 'FontSize', 15);
+ylabel('Error (AU)', 'FontSize', 15);
 title('Parameter Selection (k)', 'FontSize', 15);
 
 %% 
