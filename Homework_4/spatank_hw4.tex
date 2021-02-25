@@ -130,10 +130,6 @@ artifact_num
 \end{lstlisting}
 
 \color{lightgray} \begin{lstlisting}IEEGSETUP: Adding 'ieeg-matlab.jar' to dynamic classpath
-Warning: Objects of edu/upenn/cis/db/mefview/services/TimeSeriesDetails class
-exist - not clearing java 
-Warning: Objects of edu/upenn/cis/db/mefview/services/TimeSeriesInterface class
-exist - not clearing java 
 IEEGSETUP: Found log4j on Java classpath.
 URL: https://www.ieeg.org/services
 Client user: spatank
@@ -317,10 +313,10 @@ for i = 1:length(train_cell_array)
 end
 
 figure;
-gscatter(trainFeats(:, 1), trainFeats(:, 2), trainLabels, 'br');
+gscatter(trainFeats(:, 1), trainFeats(:, 2), trainLabels, 'rb');
 xlabel('Line Length (AU)', 'FontSize', 15);
 ylabel('Area (AU)', 'FontSize', 15);
-legend('HFO', 'Artifact', 'Location', 'SouthEast');
+legend('Artifact', 'HFO', 'Location', 'SouthEast');
 title('Feature Space', 'FontSize', 15);
 
 testFeats = zeros(length(test_cell_array), 2);
@@ -536,37 +532,37 @@ labels_SVM = predict(Mdl_SVM, feat_space);
 figure;
 hold on
 gscatter(X(:), Y(:), labels_logistic, 'yc');
-gscatter(trainFeatsNorm(:, 1), trainFeatsNorm(:, 2), trainLabels, 'br');
+gscatter(trainFeatsNorm(:, 1), trainFeatsNorm(:, 2), trainLabels, 'rb');
 hold off
 xlim([min(X(:)), max(X(:))])
 ylim([min(Y(:)), max(Y(:))])
 xlabel('Line Length (AU)', 'FontSize', 15);
 ylabel('Area (AU)', 'FontSize', 15);
-legend('HFO', 'Artifact', 'HFO (data)', 'Artifact (data)', 'Location', 'NW');
+legend('Artifact', 'HFO', 'Artifact (data)', 'HFO (data)', 'Location', 'NW');
 title('Decision Space (Logistic Regression)', 'FontSize', 15);
 
 figure;
 hold on
 gscatter(X(:), Y(:), labels_kNN, 'yc');
-gscatter(trainFeatsNorm(:, 1), trainFeatsNorm(:, 2), trainLabels, 'br');
+gscatter(trainFeatsNorm(:, 1), trainFeatsNorm(:, 2), trainLabels, 'rb');
 hold off
 xlim([min(X(:)), max(X(:))])
 ylim([min(Y(:)), max(Y(:))])
 xlabel('Line Length (AU)', 'FontSize', 15);
 ylabel('Area (AU)', 'FontSize', 15);
-legend('HFO', 'Artifact', 'HFO (data)', 'Artifact (data)', 'Location', 'NW');
+legend('Artifact', 'HFO', 'Artifact (data)', 'HFO (data)', 'Location', 'NW');
 title('Decision Space (kNN)', 'FontSize', 15);
 
 figure;
 hold on
 gscatter(X(:), Y(:), labels_SVM, 'yc');
-gscatter(trainFeatsNorm(:, 1), trainFeatsNorm(:, 2), trainLabels, 'br');
+gscatter(trainFeatsNorm(:, 1), trainFeatsNorm(:, 2), trainLabels, 'rb');
 hold off
 xlim([min(X(:)), max(X(:))])
 ylim([min(Y(:)), max(Y(:))])
 xlabel('Line Length (AU)', 'FontSize', 15);
 ylabel('Area (AU)', 'FontSize', 15);
-legend('HFO', 'Artifact', 'HFO (data)', 'Artifact (data)', 'Location', 'NW');
+legend('Artifact', 'HFO', 'Artifact (data)', 'HFO (data)', 'Location', 'NW');
 title('Decision Space (SVM)', 'FontSize', 15);
 \end{lstlisting}
 
@@ -716,10 +712,12 @@ for i = 1:length(ks)
             'NumNeighbors', k);
 
         fold_train_labels_pred = predict(Mdl_kNN, fold_train_data);
-        train_errors_CV(j) = sum(fold_train_labels ~= fold_train_labels_pred)/length(fold_train_labels);
+        train_errors_CV(j) = sum(fold_train_labels ~= ...
+            fold_train_labels_pred)/length(fold_train_labels);
 
         fold_val_labels_pred = predict(Mdl_kNN, fold_val_data);
-        val_errors_CV(j) = sum(fold_val_labels ~= fold_val_labels_pred)/length(fold_val_labels);
+        val_errors_CV(j) = sum(fold_val_labels ~= ...
+            fold_val_labels_pred)/length(fold_val_labels);
     end
     train_errors_ks(i) = mean(train_errors_CV);
     val_errors_ks(i) = mean(val_errors_CV);
@@ -744,7 +742,7 @@ title('Parameter Selection (k)', 'FontSize', 15);
 \begin{lstlisting}
 % [ANSWER HERE]
 
-k_opt = 4;
+[~, k_opt] = min(val_errors_ks);
 k_opt_train_error = train_errors_ks(k_opt)
 k_opt_val_error = val_errors_ks(k_opt)
 \end{lstlisting}
@@ -752,12 +750,12 @@ k_opt_val_error = val_errors_ks(k_opt)
 \color{lightgray} \begin{lstlisting}
 k_opt_train_error =
 
-    0.2856
+    0.2956
 
 
 k_opt_val_error =
 
-    0.4450
+    0.4100
 
 \end{lstlisting} \color{black}
 

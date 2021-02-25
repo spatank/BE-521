@@ -108,8 +108,6 @@ for i = 1:length(all_test_events)
         session.data.getvalues(start_time, duration, channel);
 end
 
-% [ANSWER HERE]
-
 % print to console
 hfo_num
 artifact_num
@@ -123,8 +121,6 @@ artifact_num
 %         normalized, there's no need for a y-axis, so remove it with
 %         the command \verb|set(gca,'YTick',[])|. (2 pts)
 % </latex>
-
-%%
 
 first_hfo = 0;
 hfo_idx = 0;
@@ -159,8 +155,6 @@ artifact_end_time = train_cell_array{1, artifact_idx}.end/1e6; % s
 artifact_time = artifact_start_time:dt:artifact_end_time;
 artifact_signal = train_cell_array{1, artifact_idx}.signal;
 
-% [ANSWER HERE]
-
 figure;
 subplot(1, 2, 1);
 plot(hfo_time, hfo_signal, 'LineWidth', 1, 'Color', [0, 0, 0]);
@@ -188,10 +182,6 @@ set(gca, 'YTick', []);
 %         the choice of frequency parameters within reason.) (3 pts)
 % </latex>
 
-%%
-
-% [ANSWER HERE]
-
 %% 
 % <latex>
 %     \item Using the forward-backward filter function
@@ -203,10 +193,6 @@ set(gca, 'YTick', []);
 %         plot \texttt{subplot} as before. Remember to remove the
 %         y-axis. (3 pts)
 % </latex>
-
-%%
-
-% [ANSWER HERE]
 
 load('Coefficients.mat');
 
@@ -244,10 +230,6 @@ set(gca, 'YTick', []);
 %     have erroneously led to a false HFO detection (3 pts)
 % </latex>
 
-%%
-
-% [ANSWER HERE]
-
 %% 
 % <latex>
 % \end{enumerate}
@@ -273,10 +255,6 @@ set(gca, 'YTick', []);
 %         ``window''.) (4 pts)
 % </latex>
 
-%%
-
-% [ANSWER HERE]
-
 LLFn = @(x) sum(abs(diff(x)));
 areaFn = @(x) sum(abs(x));
 
@@ -291,10 +269,10 @@ for i = 1:length(train_cell_array)
 end
 
 figure;
-gscatter(trainFeats(:, 1), trainFeats(:, 2), trainLabels, 'br');
+gscatter(trainFeats(:, 1), trainFeats(:, 2), trainLabels, 'rb');
 xlabel('Line Length (AU)', 'FontSize', 15);
 ylabel('Area (AU)', 'FontSize', 15);
-legend('HFO', 'Artifact', 'Location', 'SouthEast');
+legend('Artifact', 'HFO', 'Location', 'SouthEast');
 title('Feature Space', 'FontSize', 15);
 
 testFeats = zeros(length(test_cell_array), 2);
@@ -321,12 +299,8 @@ end
 %     normalized value, which you have just computed? (1 pt)
 % </latex>
 
-%%
-
 trainFeatsNorm = (trainFeats - mean(trainFeats))./std(trainFeats);
 testFeatsNorm = (testFeats - mean(trainFeats))./std(trainFeats);
-
-% The normalized value is termed the z-score.
 
 %% 
 % <latex>
@@ -335,27 +309,10 @@ testFeatsNorm = (testFeats - mean(trainFeats))./std(trainFeats);
 % </latex>
 
 %%
-
-% $k$-NN uses a distance metric (often, the Euclidean distance) to 
-% iteratively cluster data points into groups. Large feature values can
-% have a large contribution to the distance between points in feature
-% space. By normalizing, every feature is assigned equal importance in 
-% determining distances.
-
-%%
 % <latex>
 % \item Explain why (philosophically) you use the training feature means and
 % 	standard deviations to normalize the testing set. (2 pts)
 % </latex>
-
-%%
-
-% The test data is unseen during training time. As a result, any operations
-% performed on this data should not be used when constructing the algorithm
-% that will be tested on it. We also typically assume that descriptive statistics
-% such as the mean and standard deviation hold for data points across the
-% training and testing data sets, since all data comes from an underlying
-% unseen distribution whose parameters we want to infer.
 
 %% 
 % <latex>
@@ -382,10 +339,6 @@ testFeatsNorm = (testFeats - mean(trainFeats))./std(trainFeats);
 %  the highest predicted probability). (3 pts)
 % </latex>
 
-%%
-
-% [ANSWER HERE]
-
 Mdl_logistic = mnrfit(trainFeatsNorm, trainLabels);
 [~, trainLabelsPred] = max(mnrval(Mdl_logistic, trainFeatsNorm), [], 2);
 
@@ -399,10 +352,6 @@ train_error_logistic = sum(trainLabels ~= trainLabelsPred)/length(trainLabels)
 %  sentence explaining why this might be so. (2 pts)
 % </latex>
 
-%%
-
-% [ANSWER HERE]
-
 [~, testLabelsPred] = max(mnrval(Mdl_logistic, testFeatsNorm), [], 2);
 
 test_error_logistic = sum(testLabels ~= testLabelsPred)/length(testLabels)
@@ -415,10 +364,6 @@ test_error_logistic = sum(testLabels ~= testLabelsPred)/length(testLabels)
 %    \texttt{fitcknn}, and its default parameters ($k$ = 1, among
 %    other things), calculate the training and testing errors. (3 pts)
 % </latex>
-
-%%
-
-% [ANSWER HERE]
 
 Mdl_kNN = fitcknn(trainFeatsNorm, trainLabels);
 
@@ -434,14 +379,6 @@ test_error_knn = sum(testLabels ~= testLabelsPred)/length(testLabels)
 %    \item Why is the training error zero? (2 pts)
 % </latex>
 
-%%
-
-% [ANSWER HERE]
-
-% Matlab sets the number of neighbors used in the $k$-NN algorithm to 1 by
-% default. As a result, each training point ends up being closest to itself
-% and is accurately classified resulting in 0 training error.
-
 %% 
 % <latex>
 %   \end{enumerate}
@@ -450,10 +387,6 @@ test_error_knn = sum(testLabels ~= testLabelsPred)/length(testLabels)
 %  errors for an SVM model with a radial basis function (RBF) kernel function,  
 %  while keeping other parameters at their default values. (3 pts)\\
 % </latex>
-
-%%
-
-% [ANSWER HERE]
 
 Mdl_SVM = fitcsvm(trainFeatsNorm, trainLabels, 'KernelFunction', 'rbf');
 
@@ -481,10 +414,6 @@ test_error_svm = sum(testLabels ~= testLabelsPred)/length(testLabels)
 %  pts)
 % </latex>
 
-%%
-
-% [ANSWER HERE]
-
 x = linspace(min(trainFeatsNorm(:, 1)), max(trainFeatsNorm(:, 1)), 1000);
 y = linspace(min(trainFeatsNorm(:, 2)), max(trainFeatsNorm(:, 2)), 1000);
 [X, Y] = meshgrid(x, y);
@@ -497,37 +426,37 @@ labels_SVM = predict(Mdl_SVM, feat_space);
 figure;
 hold on
 gscatter(X(:), Y(:), labels_logistic, 'yc');
-gscatter(trainFeatsNorm(:, 1), trainFeatsNorm(:, 2), trainLabels, 'br');
+gscatter(trainFeatsNorm(:, 1), trainFeatsNorm(:, 2), trainLabels, 'rb');
 hold off
 xlim([min(X(:)), max(X(:))])
 ylim([min(Y(:)), max(Y(:))])
 xlabel('Line Length (AU)', 'FontSize', 15);
 ylabel('Area (AU)', 'FontSize', 15);
-legend('HFO', 'Artifact', 'HFO (data)', 'Artifact (data)', 'Location', 'NW');
+legend('Artifact', 'HFO', 'Artifact (data)', 'HFO (data)', 'Location', 'NW');
 title('Decision Space (Logistic Regression)', 'FontSize', 15);
 
 figure;
 hold on
 gscatter(X(:), Y(:), labels_kNN, 'yc');
-gscatter(trainFeatsNorm(:, 1), trainFeatsNorm(:, 2), trainLabels, 'br');
+gscatter(trainFeatsNorm(:, 1), trainFeatsNorm(:, 2), trainLabels, 'rb');
 hold off
 xlim([min(X(:)), max(X(:))])
 ylim([min(Y(:)), max(Y(:))])
 xlabel('Line Length (AU)', 'FontSize', 15);
 ylabel('Area (AU)', 'FontSize', 15);
-legend('HFO', 'Artifact', 'HFO (data)', 'Artifact (data)', 'Location', 'NW');
+legend('Artifact', 'HFO', 'Artifact (data)', 'HFO (data)', 'Location', 'NW');
 title('Decision Space (kNN)', 'FontSize', 15);
 
 figure;
 hold on
 gscatter(X(:), Y(:), labels_SVM, 'yc');
-gscatter(trainFeatsNorm(:, 1), trainFeatsNorm(:, 2), trainLabels, 'br');
+gscatter(trainFeatsNorm(:, 1), trainFeatsNorm(:, 2), trainLabels, 'rb');
 hold off
 xlim([min(X(:)), max(X(:))])
 ylim([min(Y(:)), max(Y(:))])
 xlabel('Line Length (AU)', 'FontSize', 15);
 ylabel('Area (AU)', 'FontSize', 15);
-legend('HFO', 'Artifact', 'HFO (data)', 'Artifact (data)', 'Location', 'NW');
+legend('Artifact', 'HFO', 'Artifact (data)', 'HFO (data)', 'Location', 'NW');
 title('Decision Space (SVM)', 'FontSize', 15);
 
 %% 
@@ -537,10 +466,6 @@ title('Decision Space (SVM)', 'FontSize', 15);
 %  of these has overfit the data the most? Which has underfit the data
 %  the most? (3 pts)
 % </latex>
-
-%%
-
-% [ANSWER HERE]
 
 %% 
 % <latex>
@@ -570,10 +495,6 @@ title('Decision Space (SVM)', 'FontSize', 15);
 %  between folds). (2 pts)
 % </latex>
 
-%%
-
-% [ANSWER HERE]
-
 num_folds = 10; % number of CV folds
 rand_idx = randperm(length(trainFeatsNorm));
 folds = mat2cell(reshape(rand_idx, num_folds, []), ones(1, 10));
@@ -591,10 +512,6 @@ length(unique([folds{:}]))
 %    \item Compute the error (called the validation error) of these
 %    predictions. (3 pts) 
 % </latex>
-
-%%
-
-% [ANSWER HERE]
 
 train_errors_CV = zeros(1, num_folds);
 val_errors_CV = zeros(1, num_folds);
@@ -626,10 +543,6 @@ val_error = mean(val_errors_CV)
 %    it make sense? (2 pts)
 % </latex>
 
-%%
-
-% [ANSWER HERE]
-
 %% 
 % <latex>
 %   \end{enumerate}
@@ -643,10 +556,6 @@ val_error = mean(val_errors_CV)
 %    validation error and \texttt{'r-o'} for the training error. (4
 %    pts) 
 % </latex>
-
-%%
-
-% [ANSWER HERE]
 
 ks = 1:30;
 train_errors_ks = zeros(1, length(ks));
@@ -695,11 +604,7 @@ title('Parameter Selection (k)', 'FontSize', 15);
 % \item What is the optimal $k$ value and its training and testing error? (1 pts)
 % </latex>
 
-%%
-
-% [ANSWER HERE]
-
-k_opt = 4;
+[~, k_opt] = min(val_errors_ks)
 k_opt_train_error = train_errors_ks(k_opt)
 k_opt_val_error = val_errors_ks(k_opt)
 
@@ -709,16 +614,6 @@ k_opt_val_error = val_errors_ks(k_opt)
 %    values of $k$. (2 pts)
 % </latex>
 
-%%
-
-% [ANSWER HERE]
-
-% When $k = 1$, every training point is assigned the label of its 
-% nearest neighbor, which is itself. This leads to a training error of 0.
-% Higher values of $k$ have the effect of distributing the responsibility
-% for a point's label amongst multiple training points. This leads to less
-% over-fitting.
-
 %% 
 % <latex>
 %   \end{enumerate}
@@ -727,10 +622,6 @@ k_opt_val_error = val_errors_ks(k_opt)
 %    \item Using your optimal value for $k$ from CV, calculate the
 %    $k$-NN model's \textit{testing} error. (1 pts) 
 % </latex>
-
-%%
-
-% [ANSWER HERE]
 
 Mdl_kNN_opt = fitcknn(trainFeatsNorm, trainLabels, 'NumNeighbors', k_opt);
 
@@ -746,10 +637,6 @@ test_error_knn_k_opt = sum(testLabels ~= testLabelsPred)/length(testLabels)
 %    you trained in question 3.3? Is it the best of the three models
 %    you trained in Section 3? (2 pts)
 % </latex>
-
-%%
-
-% [ANSWER HERE]
 
 %% 
 % <latex>
