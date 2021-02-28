@@ -34,6 +34,17 @@
 %%
 % [ANSWER HERE]
 
+clc; close all; clear;
+
+cd('/Users/sppatankar/Developer/BE-521')
+addpath(genpath('Homework_5'));
+load('mouseV1.mat')
+
+num_neurons = length(neurons);
+num_stimuli = length(stimuli);
+all_angles = unique(stimuli(:, 2)); % unique() sorts in ascending order
+num_unique_angles = length(all_angles)
+
 %% 
 % <latex> 
 %  \item A \emph{tuning curve} is frequently used to study the response of a neuron to a given range of input stimuli. To create tuning curves for this data, calculate the average number of spikes each cell fires in response to each grating angle. Store the result in an $18\times m$ dimensional matrix, where each element represents the response of a single neuron to a particular input stimulus angle, with each neuron assigned a row and each angle assigned a column. In a $2\times 2$ Matlab subplot, plot the tuning curve for the first four cells.  Place the stimulus angle on the x-axis and the number of spikes on the y-axis.  (6 pts)
@@ -41,6 +52,51 @@
 
 %%
 % [ANSWER HERE]
+
+stim_durations = diff(stimuli(:, 1));
+stim_durations(end + 1) = round(mean(stim_durations));
+
+tuning_curves = zeros(num_neurons, num_unique_angles);
+
+for i = 1:num_unique_angles
+    curr_angle = all_angles(i);
+    % Find the indices when the current angle is used for stimulation.
+    curr_angle_idx = find(stimuli(:, 2) == curr_angle);
+    % Initialize an empty array to store how many spikes each neuron fires
+    % for each use of this angle.
+    angle_response = zeros(num_neurons, length(curr_angle_idx));
+    for j = 1:num_neurons
+        curr_neuron = neurons{1, j};
+        % Loop over each use of the current angle to find how often each
+        % neuron fired in response.
+        for k = 1:length(curr_angle_idx)
+            stim_start_time = stimuli(curr_angle_idx(k), 1);
+            stim_end_time = stim_start_time + stim_durations(curr_angle_idx(k));
+            spikes = curr_neuron((curr_neuron > stim_start_time) ...
+                & (curr_neuron < stim_end_time));
+            angle_response(j, k) = length(spikes);
+        end   
+    end
+    % Take the mean of the number of spikes for each neuron.
+    tuning_curves(:, i) = mean(angle_response, 2);
+end
+
+figure;
+for i = 1:4
+    subplot(2, 2, i)
+    plot(all_angles, tuning_curves(i, :), 'LineWidth', 1.5, 'Color', [0, 0, 0])
+    xlabel('Stimulus Angle', 'FontSize', 12);
+    ylabel('Average Number of Spikes', 'FontSize', 12);
+    title(sprintf('Neuron %d', i), 'FontSize', 15);
+end
+
+% for i = 1:num_neurons
+%     figure;
+%     plot(all_angles, tuning_curves(i, :), 'LineWidth', 1.5, 'Color', [0, 0, 0])
+%     xlabel('Stimulus Angle', 'FontSize', 12);
+%     ylabel('Average Number of Spikes', 'FontSize', 12);
+%     title(sprintf('Neuron %d', i), 'FontSize', 15);
+% end
 
 %% 
 % <latex> 
@@ -50,6 +106,24 @@
 
 %%
 % [ANSWER HERE]
+
+plot_neurons = [6, 7, 8, 10];
+figure;
+for i = 1:length(plot_neurons)
+    neuron_ID = plot_neurons(i);
+    subplot(2, 2, i);
+    hold on
+    plot(all_angles, tuning_curves(neuron_ID, :), ...
+        'LineWidth', 1.5, 'Color', [0, 0, 0])
+    plot(all_angles(1:6) + 180, tuning_curves(neuron_ID, 1:6), ...
+        'LineWidth', 1.5, 'LineStyle', '--')
+    hold off
+    xlabel('Stimulus Angle', 'FontSize', 12);
+    ylabel('Average Number of Spikes', 'FontSize', 12);
+    title(sprintf('Neuron %d', neuron_ID), 'FontSize', 15);
+end
+legend('Original', '0-150 Repeated', ...
+    'Location', 'NorthWest');
 
 %% 
 % <latex> 
@@ -87,6 +161,56 @@
 %%
 % [ANSWER HERE]
 
+% 1) Use only the first 70 trials to compute tuning curves
+% 2) Merge data for angles 180-330 with 0-150
+
+stim_durations = diff(stimuli(:, 1));
+stim_durations(end + 1) = round(mean(stim_durations));
+
+tuning_curves_train_all = zeros(num_neurons, num_unique_angles);
+
+for i = 1:num_unique_angles
+    curr_angle = all_angles(i);
+    % Find the indices when the current angle is used for stimulation.
+    % Note that we are looking for the current angle only in the first 70
+    % stimulation trials.
+    curr_angle_idx = find(stimuli(1:70, 2) == curr_angle);
+    % Initialize an empty array to store how many spikes each neuron fires
+    % for each use of this angle.
+    angle_response = zeros(num_neurons, length(curr_angle_idx));
+    for j = 1:num_neurons
+        curr_neuron = neurons{1, j};
+        % Loop over each use of the current angle to find how often each
+        % neuron fired in response.
+        for k = 1:length(curr_angle_idx)
+            stim_start_time = stimuli(curr_angle_idx(k), 1);
+            stim_end_time = stim_start_time + stim_durations(curr_angle_idx(k));
+            spikes = curr_neuron((curr_neuron > stim_start_time) ...
+                & (curr_neuron < stim_end_time));
+            angle_response(j, k) = length(spikes);
+        end   
+    end
+    % Take the mean of the number of spikes for each neuron.
+    tuning_curves_train_all(:, i) = mean(angle_response, 2);
+end
+
+F = (tuning_curves_train_all(:, 1:6) + ...
+    tuning_curves_train_all(:, 7:12)) ./ 2;
+
+% Histogram of stimulation angles for the first 70 trials
+F_stim_angles = stimuli(1:70, 2);
+F_stim_angles(F_stim_angles > 150) = F_stim_angles(F_stim_angles > 150) - 180;
+figure;
+hold on
+histogram(F_stim_angles, length(unique(F_stim_angles)));
+plot([mean(F_stim_angles); mean(F_stim_angles)], ...
+    repmat(ylim', 1, 1), '-r', 'LineWidth', 2)
+hold off
+xlabel('Stimulation Angle', 'FontSize', 15);
+ylabel('Frequency', 'FontSize', 15);
+title('Stimulation Angle Distribution', 'FontSize', 15);
+
+
 %% 
 % <latex> 
 %  \item For the 50 ``testing'' trials, compute a $n \times 50$ matrix \verb|S| where each row 
@@ -98,6 +222,41 @@
 
 %%
 % [ANSWER HERE]
+test_stim = stimuli(71:end, :); % all test stimulation data
+test_stim_angles = test_stim(:, 2); % test stimulation angles
+% Replace angles such that theta + 180 = theta
+test_stim_angles(test_stim_angles > 150) = ...
+    test_stim_angles(test_stim_angles > 150) - 180;
+% Generate duration information for the stimuli
+test_stim_durations = diff(test_stim(:, 1)); 
+test_stim_durations(end + 1) = round(mean(test_stim_durations));
+
+s = zeros(num_neurons, length(test_stim));
+test_angles = zeros(1, length(test_stim));
+
+for i = 1:length(test_stim)
+    stim_start_time = test_stim(i, 1);
+    stim_end_time = stim_start_time + test_stim_durations(i);
+    test_angles(i) = test_stim(i, 2);
+    for j = 1:num_neurons
+        curr_neuron = neurons{1, j};
+        spikes = curr_neuron((curr_neuron > stim_start_time) ...
+            & (curr_neuron < stim_end_time)); 
+        s(j, i) = length(spikes);
+    end
+end
+
+LL = s' * log(F);
+
+figure;
+for i = 1:4
+    subplot(2, 2, i)
+    plot(unique(F_stim_angles), LL(i, :), 'LineWidth', 1.5, 'Color', [0, 0, 0])
+    xlabel('Stimulus Angle', 'FontSize', 12);
+    ylabel('Log Likelihood', 'FontSize', 12);
+    title(sprintf('Trial %d (Angle = %d)', i, test_stim_angles(i)), ...
+        'FontSize', 15);
+end
 
 %% 
 % <latex> 
@@ -117,6 +276,15 @@
 
 %%
 % [ANSWER HERE]
+pred_angle = zeros(1, length(test_stim));
+all_angles_sym = all_angles(1:6); % sym refers to rotational symmetry
+
+for i = 1:length(test_stim)
+    [~, max_idx] = max(LL(1, :));
+    pred_angle(i) = all_angles_sym(max_idx);
+end
+
+accuracy = sum(test_angles ~= pred_angle)/length(test_angles)
 
 %% 
 % <latex> 
