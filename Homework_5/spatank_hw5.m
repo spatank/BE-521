@@ -276,15 +276,15 @@ end
 
 %%
 % [ANSWER HERE]
-pred_angle = zeros(1, length(test_stim));
+pred_angles = zeros(1, length(test_stim));
 all_angles_sym = all_angles(1:6); % sym refers to rotational symmetry
 
 for i = 1:length(test_stim)
     [~, max_idx] = max(LL(1, :));
-    pred_angle(i) = all_angles_sym(max_idx);
+    pred_angles(i) = all_angles_sym(max_idx);
 end
 
-accuracy = sum(test_angles ~= pred_angle)/length(test_angles)
+accuracy = sum(test_angles ~= pred_angles)/length(test_angles)
 
 %% 
 % <latex> 
@@ -306,6 +306,27 @@ accuracy = sum(test_angles ~= pred_angle)/length(test_angles)
 %%
 % [ANSWER HERE]
 
+num_iters = 1000; % 1000 permutations
+accuracy_perm = zeros(1, num_iters);
+for i = 1:num_iters 
+    test_angles_perm = datasample(unique(F_stim_angles), length(pred_angles))';
+    accuracy_perm(i) = sum(test_angles_perm ~= pred_angles)/length(test_angles_perm);
+end
+
+F_stim_angles = stimuli(1:70, 2);
+F_stim_angles(F_stim_angles > 150) = F_stim_angles(F_stim_angles > 150) - 180;
+figure;
+hold on
+histogram(accuracy_perm, 10);
+plot([accuracy; accuracy], ...
+    repmat(ylim', 1, 1), '-r', 'LineWidth', 2)
+hold off
+xlabel('Accuracy', 'FontSize', 15);
+ylabel('Frequency', 'FontSize', 15);
+legend('Null Distribution', 'argmax(LL) Accuracy', ...
+    'Location', 'NorthWest');
+title('Permutation Test', 'FontSize', 15);
+
 %% 
 % <latex> 
 % 	 \item Is the null distribution what you expected? Explain. (1 pt)
@@ -321,6 +342,7 @@ accuracy = sum(test_angles ~= pred_angle)/length(test_angles)
 
 %%
 % [ANSWER HERE]
+p_value = sum(accuracy_perm > accuracy)/num_iters
 
 %% 
 % <latex> 
@@ -329,6 +351,7 @@ accuracy = sum(test_angles ~= pred_angle)/length(test_angles)
 
 %%
 % [ANSWER HERE]
+p_value_25 = sum(accuracy_perm > 0.25)/num_iters
 
 %% 
 % <latex> 
