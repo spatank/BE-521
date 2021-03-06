@@ -32,9 +32,6 @@
 % </latex>
 
 %%
-% [ANSWER HERE]
-
-clc; close all; clear;
 
 cd('/Users/sppatankar/Developer/BE-521')
 addpath(genpath('Homework_5'));
@@ -51,7 +48,6 @@ num_unique_angles = length(all_angles)
 % </latex>
 
 %%
-% [ANSWER HERE]
 
 stim_durations = diff(stimuli(:, 1));
 stim_durations(end + 1) = round(mean(stim_durations));
@@ -90,14 +86,6 @@ for i = 1:4
     title(sprintf('Neuron %d', i), 'FontSize', 15);
 end
 
-% for i = 1:num_neurons
-%     figure;
-%     plot(all_angles, tuning_curves(i, :), 'LineWidth', 1.5, 'Color', [0, 0, 0])
-%     xlabel('Stimulus Angle', 'FontSize', 12);
-%     ylabel('Average Number of Spikes', 'FontSize', 12);
-%     title(sprintf('Neuron %d', i), 'FontSize', 15);
-% end
-
 %% 
 % <latex> 
 %   \begin{enumerate}
@@ -105,7 +93,6 @@ end
 % </latex>
 
 %%
-% [ANSWER HERE]
 
 plot_neurons = [6, 7, 8, 10];
 figure;
@@ -131,7 +118,6 @@ legend('Original', '0-150 Repeated', ...
 % </latex>
 
 %%
-% [ANSWER HERE]
 
 %% 
 % <latex> 
@@ -159,7 +145,6 @@ legend('Original', '0-150 Repeated', ...
 % </latex>
 
 %%
-% [ANSWER HERE]
 
 % 1) Use only the first 70 trials to compute tuning curves
 % 2) Merge data for angles 180-330 with 0-150
@@ -221,7 +206,7 @@ title('Stimulation Angle Distribution', 'FontSize', 15);
 % </latex>
 
 %%
-% [ANSWER HERE]
+
 test_stim = stimuli(71:end, :); % all test stimulation data
 test_stim_angles = test_stim(:, 2); % test stimulation angles
 % Replace angles such that theta + 180 = theta
@@ -264,7 +249,6 @@ end
 % </latex>
 
 %%
-% [ANSWER HERE]
 
 %% 
 % <latex> 
@@ -294,7 +278,6 @@ accuracy = sum(test_angles ~= pred_angles)/length(test_angles)
 % </latex>
 
 %%
-% [ANSWER HERE]
 
 %% 
 % <latex> 
@@ -304,7 +287,6 @@ accuracy = sum(test_angles ~= pred_angles)/length(test_angles)
 % </latex>
 
 %%
-% [ANSWER HERE]
 
 num_iters = 1000; % 1000 permutations
 accuracy_perm = zeros(1, num_iters);
@@ -333,7 +315,6 @@ title('Permutation Test', 'FontSize', 15);
 % </latex>
 
 %%
-% [ANSWER HERE]
 
 %% 
 % <latex> 
@@ -341,7 +322,7 @@ title('Permutation Test', 'FontSize', 15);
 % </latex>
 
 %%
-% [ANSWER HERE]
+
 p_value = sum(accuracy_perm > accuracy)/num_iters
 
 %% 
@@ -350,7 +331,7 @@ p_value = sum(accuracy_perm > accuracy)/num_iters
 % </latex>
 
 %%
-% [ANSWER HERE]
+
 p_value_25 = sum(accuracy_perm > 0.25)/num_iters
 
 %% 
@@ -359,7 +340,6 @@ p_value_25 = sum(accuracy_perm > 0.25)/num_iters
 % </latex>
 
 %%
-% [ANSWER HERE]
 
 %% 
 % <latex> 
@@ -369,7 +349,6 @@ p_value_25 = sum(accuracy_perm > 0.25)/num_iters
 % </latex>
 
 %%
-% [ANSWER HERE]
 
 %% 
 % <latex> 
