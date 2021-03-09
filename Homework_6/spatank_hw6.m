@@ -347,7 +347,7 @@ title('Spike Waveform PCs', 'FontSize', 15);
 % </latex>
 
 figure;
-plot(1:size(score, 2), explained, 'LineWidth', 2, 'Color', [0, 0, 0])
+plot(1:size(score, 2), cumsum(explained), 'LineWidth', 2, 'Color', [0, 0, 0])
 xlabel('Number of PCs', 'FontSize', 15)
 ylabel('Percentage of Variance Explained', 'FontSize', 15)
 title('Spike Waveform PCs', 'FontSize', 15);
