@@ -220,20 +220,20 @@ end_time_muscle = session_1.data.rawChannels(1).get_tsdetails.getEndTime/1e6; % 
 time_muscle = 0:1/sampling_rate_1:end_time_nerve;
 muscle_signal = session_1.data.getvalues(1:ceil(end_time_muscle * sampling_rate_1), 1); % microV
 
-figure;
-subplot(2, 1, 1);
-plot(time_nerve * 10^3, ...
-    nerve_signal / 10^3, ...
-    'LineWidth', 2, 'Color', [0, 0, 0])
-xlabel('Time (ms)', 'FontSize', 15);
-ylabel('Nerve Signal (mV)', 'FontSize', 15);
-subplot(2, 1, 2);
-plot(time_muscle * 10^3, ...
-    muscle_signal / 10^3, ...
-    'LineWidth', 2, 'Color', [0, 0, 0])
-xlim([0, 2.5 * 10^3])
-xlabel('Time (ms)', 'FontSize', 15);
-ylabel('Muscle Signal (mV)', 'FontSize', 15);
+% figure;
+% subplot(2, 1, 1);
+% plot(time_nerve * 10^3, ...
+%     nerve_signal / 10^3, ...
+%     'LineWidth', 2, 'Color', [0, 0, 0])
+% xlabel('Time (ms)', 'FontSize', 15);
+% ylabel('Nerve Signal (mV)', 'FontSize', 15);
+% subplot(2, 1, 2);
+% plot(time_muscle * 10^3, ...
+%     muscle_signal / 10^3, ...
+%     'LineWidth', 2, 'Color', [0, 0, 0])
+% xlim([0, 2.5 * 10^3])
+% xlabel('Time (ms)', 'FontSize', 15);
+% ylabel('Muscle Signal (mV)', 'FontSize', 15);
 
 potential_change = zeros(1, length(vals));
 
@@ -295,7 +295,7 @@ inds_thresh = signal(2:end-1) > threshold;
 inds = find(inds_df_2 .* inds_thresh);
 vals = signal(inds + 1);
 
-half_window_size = round((1/1000) * sampling_rate_2);
+half_window_size = round((1/1000) * sampling_rate_2) - 1;
 
 all_waveforms = zeros(length(vals), (2 * half_window_size) + 1);
 pseudo_time = linspace(-1, 1, (2 * half_window_size) + 1);
@@ -351,6 +351,8 @@ plot(1:size(score, 2), cumsum(explained), 'LineWidth', 2, 'Color', [0, 0, 0])
 xlabel('Number of PCs', 'FontSize', 15)
 ylabel('Percentage of Variance Explained', 'FontSize', 15)
 title('Spike Waveform PCs', 'FontSize', 15);
+
+explained(1) + explained(2)
 
 %% 
 % <latex>
