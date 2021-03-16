@@ -85,12 +85,15 @@ for i = 1:length(all_train_events)
     start_time = all_train_events(1, i).start; % microseconds 
     end_time = all_train_events(1, i).stop; % microseconds
     duration = end_time - start_time;
-    channel = 1;
+    channel = 2;
     train_cell_array{1, i}.start = start_time;
     train_cell_array{1, i}.end = end_time;
     train_cell_array{1, i}.signal = ...
         session.data.getvalues(start_time, duration, channel);
 end
+
+train_cell_array{1, i}.signal = ...
+        session.data.getvalues(start_time, duration - 1, channel);
 
 % testing
 [all_test_events, ~, ~] = ...

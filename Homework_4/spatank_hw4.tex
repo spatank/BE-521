@@ -99,12 +99,15 @@ for i = 1:length(all_train_events)
     start_time = all_train_events(1, i).start; % microseconds
     end_time = all_train_events(1, i).stop; % microseconds
     duration = end_time - start_time;
-    channel = 1;
+    channel = 2;
     train_cell_array{1, i}.start = start_time;
     train_cell_array{1, i}.end = end_time;
     train_cell_array{1, i}.signal = ...
         session.data.getvalues(start_time, duration, channel);
 end
+
+train_cell_array{1, i}.signal = ...
+        session.data.getvalues(start_time, duration - 1, channel);
 
 % testing
 [all_test_events, ~, ~] = ...
@@ -121,8 +124,6 @@ for i = 1:length(all_test_events)
     test_cell_array{1, i}.signal = ...
         session.data.getvalues(start_time, duration, channel);
 end
-
-% [ANSWER HERE]
 
 % print to console
 hfo_num
@@ -187,8 +188,6 @@ artifact_end_time = train_cell_array{1, artifact_idx}.end/1e6; % s
 artifact_time = artifact_start_time:dt:artifact_end_time;
 artifact_signal = train_cell_array{1, artifact_idx}.signal;
 
-% [ANSWER HERE]
-
 figure;
 subplot(1, 2, 1);
 plot(hfo_time, hfo_signal, 'LineWidth', 1, 'Color', [0, 0, 0]);
@@ -217,9 +216,6 @@ set(gca, 'YTick', []);
         filter's magnitude response. (Note: We will be flexible with
         the choice of frequency parameters within reason.) (3 pts)
 
-\begin{lstlisting}
-% [ANSWER HERE]
-\end{lstlisting}
 
     \item Using the forward-backward filter function
     (\texttt{filtfilt}) and the numerator coefficients saved above,
@@ -231,8 +227,6 @@ set(gca, 'YTick', []);
         y-axis. (3 pts)
 
 \begin{lstlisting}
-% [ANSWER HERE]
-
 load('Coefficients.mat');
 
 hfo_signal_filt = filtfilt(Num, 1, hfo_signal);
@@ -270,9 +264,6 @@ set(gca, 'YTick', []);
     \item Speculate how processing the data using Staba's method may
     have erroneously led to a false HFO detection (3 pts)
 
-\begin{lstlisting}
-% [ANSWER HERE]
-\end{lstlisting}
 
 \end{enumerate}
 \section{Defining Features for HFOs (9 pts)} In this section we will
@@ -297,8 +288,6 @@ applied to better segregate HFOs and artifacts
         ``window''.) (4 pts)
 
 \begin{lstlisting}
-% [ANSWER HERE]
-
 LLFn = @(x) sum(abs(diff(x)));
 areaFn = @(x) sum(abs(x));
 
@@ -347,32 +336,15 @@ end
 \begin{lstlisting}
 trainFeatsNorm = (trainFeats - mean(trainFeats))./std(trainFeats);
 testFeatsNorm = (testFeats - mean(trainFeats))./std(trainFeats);
-
-% The normalized value is termed the z-score.
 \end{lstlisting}
 
 	\item Explain why such a feature normalization might be critical
 	to the performance of a $k$-NN classifier. (2 pts)
 
-\begin{lstlisting}
-% $k$-NN uses a distance metric (often, the Euclidean distance) to
-% iteratively cluster data points into groups. Large feature values can
-% have a large contribution to the distance between points in feature
-% space. By normalizing, every feature is assigned equal importance in
-% determining distances.
-\end{lstlisting}
 
 \item Explain why (philosophically) you use the training feature means and
 	standard deviations to normalize the testing set. (2 pts)
 
-\begin{lstlisting}
-% The test data is unseen during training time. As a result, any operations
-% performed on this data should not be used when constructing the algorithm
-% that will be tested on it. We also typically assume that descriptive statistics
-% such as the mean and standard deviation hold for data points across the
-% training and testing data sets, since all data comes from an underlying
-% unseen distribution whose parameters we want to infer.
-\end{lstlisting}
 
     \end{enumerate}
 \end{enumerate}
@@ -397,8 +369,6 @@ let us know.
  the highest predicted probability). (3 pts)
 
 \begin{lstlisting}
-% [ANSWER HERE]
-
 Mdl_logistic = mnrfit(trainFeatsNorm, trainLabels);
 [~, trainLabelsPred] = max(mnrval(Mdl_logistic, trainFeatsNorm), [], 2);
 
@@ -408,7 +378,7 @@ train_error_logistic = sum(trainLabels ~= trainLabelsPred)/length(trainLabels)
 \color{lightgray} \begin{lstlisting}
 train_error_logistic =
 
-    0.4150
+    0.1250
 
 \end{lstlisting} \color{black}
 
@@ -418,8 +388,6 @@ train_error_logistic =
  sentence explaining why this might be so. (2 pts)
 
 \begin{lstlisting}
-% [ANSWER HERE]
-
 [~, testLabelsPred] = max(mnrval(Mdl_logistic, testFeatsNorm), [], 2);
 
 test_error_logistic = sum(testLabels ~= testLabelsPred)/length(testLabels)
@@ -428,7 +396,7 @@ test_error_logistic = sum(testLabels ~= testLabelsPred)/length(testLabels)
 \color{lightgray} \begin{lstlisting}
 test_error_logistic =
 
-    0.3714
+    0.1333
 
 \end{lstlisting} \color{black}
 
@@ -439,8 +407,6 @@ test_error_logistic =
    other things), calculate the training and testing errors. (3 pts)
 
 \begin{lstlisting}
-% [ANSWER HERE]
-
 Mdl_kNN = fitcknn(trainFeatsNorm, trainLabels);
 
 trainLabelsPred = predict(Mdl_kNN, trainFeatsNorm);
@@ -458,19 +424,12 @@ train_error_knn =
 
 test_error_knn =
 
-    0.4476
+    0.1786
 
 \end{lstlisting} \color{black}
 
    \item Why is the training error zero? (2 pts)
 
-\begin{lstlisting}
-% [ANSWER HERE]
-
-% Matlab sets the number of neighbors used in the $k$-NN algorithm to 1 by
-% default. As a result, each training point ends up being closest to itself
-% and is accurately classified resulting in 0 training error.
-\end{lstlisting}
 
   \end{enumerate}
  \item Now, train Matlab's implementation of a
@@ -479,8 +438,6 @@ test_error_knn =
  while keeping other parameters at their default values. (3 pts)\\
 
 \begin{lstlisting}
-% [ANSWER HERE]
-
 Mdl_SVM = fitcsvm(trainFeatsNorm, trainLabels, 'KernelFunction', 'rbf');
 
 trainLabelsPred = predict(Mdl_SVM, trainFeatsNorm);
@@ -493,12 +450,12 @@ test_error_svm = sum(testLabels ~= testLabelsPred)/length(testLabels)
 \color{lightgray} \begin{lstlisting}
 train_error_svm =
 
-    0.4050
+    0.1100
 
 
 test_error_svm =
 
-    0.6214
+    0.1143
 
 \end{lstlisting} \color{black}
 
@@ -518,8 +475,6 @@ test_error_svm =
  pts)
 
 \begin{lstlisting}
-% [ANSWER HERE]
-
 x = linspace(min(trainFeatsNorm(:, 1)), max(trainFeatsNorm(:, 1)), 1000);
 y = linspace(min(trainFeatsNorm(:, 2)), max(trainFeatsNorm(:, 2)), 1000);
 [X, Y] = meshgrid(x, y);
@@ -580,9 +535,6 @@ title('Decision Space (SVM)', 'FontSize', 15);
  of these has overfit the data the most? Which has underfit the data
  the most? (3 pts)
 
-\begin{lstlisting}
-% [ANSWER HERE]
-\end{lstlisting}
 
 \end{enumerate}
 \section{Cross-Validation (17 pts)} In this section, you will
@@ -610,8 +562,6 @@ training data).
  between folds). (2 pts)
 
 \begin{lstlisting}
-% [ANSWER HERE]
-
 num_folds = 10; % number of CV folds
 rand_idx = randperm(length(trainFeatsNorm));
 folds = mat2cell(reshape(rand_idx, num_folds, []), ones(1, 10));
@@ -636,8 +586,6 @@ ans =
    predictions. (3 pts)
 
 \begin{lstlisting}
-% [ANSWER HERE]
-
 train_errors_CV = zeros(1, num_folds);
 val_errors_CV = zeros(1, num_folds);
 
@@ -665,7 +613,7 @@ val_error = mean(val_errors_CV)
 \color{lightgray} \begin{lstlisting}
 val_error =
 
-    0.5850
+    0.1600
 
 \end{lstlisting} \color{black}
 
@@ -673,9 +621,6 @@ val_error =
    higher, the same?) to the error you found in question 3.3? Does
    it make sense? (2 pts)
 
-\begin{lstlisting}
-% [ANSWER HERE]
-\end{lstlisting}
 
   \end{enumerate}
  \item Create a parameter space for your $k$-NN model by setting a
@@ -689,8 +634,6 @@ val_error =
    pts)
 
 \begin{lstlisting}
-% [ANSWER HERE]
-
 ks = 1:30;
 train_errors_ks = zeros(1, length(ks));
 val_errors_ks = zeros(1, length(ks));
@@ -740,37 +683,31 @@ title('Parameter Selection (k)', 'FontSize', 15);
 \item What is the optimal $k$ value and its training and testing error? (1 pts)
 
 \begin{lstlisting}
-% [ANSWER HERE]
-
-[~, k_opt] = min(val_errors_ks);
+[~, k_opt] = min(val_errors_ks)
 k_opt_train_error = train_errors_ks(k_opt)
 k_opt_val_error = val_errors_ks(k_opt)
 \end{lstlisting}
 
 \color{lightgray} \begin{lstlisting}
+k_opt =
+
+    23
+
+
 k_opt_train_error =
 
-    0.2956
+    0.1233
 
 
 k_opt_val_error =
 
-    0.4100
+    0.1200
 
 \end{lstlisting} \color{black}
 
    \item Explain why $k$-NN generally overfits less with higher
    values of $k$. (2 pts)
 
-\begin{lstlisting}
-% [ANSWER HERE]
-
-% When $k = 1$, every training point is assigned the label of its
-% nearest neighbor, which is itself. This leads to a training error of 0.
-% Higher values of $k$ have the effect of distributing the responsibility
-% for a point's label amongst multiple training points. This leads to less
-% over-fitting.
-\end{lstlisting}
 
   \end{enumerate}
  \item
@@ -779,8 +716,6 @@ k_opt_val_error =
    $k$-NN model's \textit{testing} error. (1 pts)
 
 \begin{lstlisting}
-% [ANSWER HERE]
-
 Mdl_kNN_opt = fitcknn(trainFeatsNorm, trainLabels, 'NumNeighbors', k_opt);
 
 trainLabelsPred = predict(Mdl_kNN_opt, trainFeatsNorm);
@@ -792,7 +727,7 @@ test_error_knn_k_opt = sum(testLabels ~= testLabelsPred)/length(testLabels)
 \color{lightgray} \begin{lstlisting}
 test_error_knn_k_opt =
 
-    0.5476
+    0.1119
 
 \end{lstlisting} \color{black}
 
@@ -801,9 +736,6 @@ test_error_knn_k_opt =
    you trained in question 3.3? Is it the best of the three models
    you trained in Section 3? (2 pts)
 
-\begin{lstlisting}
-% [ANSWER HERE]
-\end{lstlisting}
 
   \end{enumerate}
 \end{enumerate}
