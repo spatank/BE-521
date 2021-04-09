@@ -12,13 +12,14 @@
 % other aspects of the project relevant to BE521.
 
 
-%% Start the necessary ieeg.org sessions (0 points)
+%% Start the necessary ieeg.org sessions 
 
 clc; close all; clear;
 
-cd('/Users/sppatankar/Developer/BE-521')
-addpath(genpath('ieeg-matlab-1.14.49'))
-addpath(genpath('Project/Part_1'));
+cd('/Users/sppatankar/Developer/BE-521/')
+base_path = '/Users/sppatankar/Developer/BE-521/';
+addpath(genpath(fullfile(base_path, 'ieeg-matlab-1.14.49')))
+addpath(genpath(fullfile(base_path, 'Project')))
 
 username = 'spatank';
 passPath = 'spa_ieeglogin.bin';
@@ -46,15 +47,14 @@ dataglove = all_data.train_dg{subj};
 % (1.2) The filter is a bandpass filter allowing signal in the range from
 % 0.15 Hz to 200 Hz.
 
-% Split data into a train and test set (use at least 50% for training)
+% % Split data into a train and test set (use at least 50% for training)
 
 [m, n] = size(ecog);
-P = 0.5; % percentage of training data
-idx = randperm(m);
-train_ecog = ecog(idx(1:round(P * m)), :);
-train_dg = dataglove(idx(1:round(P * m)), :);
-val_ecog = ecog(idx(round(P * m) + 1:end), :);
-val_dg = dataglove(idx(round(P * m) + 1:end), :);
+P = 0.75; % percentage of training data
+train_ecog = ecog(1:round(P * m), :);
+train_dg = dataglove(1:round(P * m), :);
+val_ecog = ecog(round(P * m) + 1:end, :);
+val_dg = dataglove(round(P * m) + 1:end, :);
 
 %% Get Features
 % run getWindowedFeats function
@@ -66,13 +66,15 @@ window_overlap = 50/1000; % window displacement (s)
 % https://cs231n.github.io/convolutional-networks/
 NumWins = @(xLen, fs, winLen, winDisp) ...
     ((xLen - (winLen * fs))/(winDisp * fs) + 1);
-num_wins = ...
+num_train_wins = ...
     NumWins(length(train_ecog(:, 1)), fs, window_length, window_overlap);
+num_val_wins = ...
+    NumWins(length(val_ecog(:, 1)), fs, window_length, window_overlap);
 
 % create R matrix
 R = getWindowedFeats(train_ecog, fs, window_length, window_overlap);
 
-%% Train classifiers (8 points)
+%% Train classifiers
 
 % Classifier 1: Get angle predictions using optimal linear decoding. That is, 
 % calculate the linear filter (i.e. the weights matrix) as defined by 
@@ -80,61 +82,83 @@ R = getWindowedFeats(train_ecog, fs, window_length, window_overlap);
 
 % Downsampling using means over windows for the dataglove signal
 num_dg_channels = size(train_dg, 2);
-Y_train = zeros(num_wins, num_dg_channels);
+Y_train = zeros(num_train_wins, num_dg_channels);
 win_start_idx = 1;
-for i = 1:num_wins
+for i = 1:num_train_wins
     win_end_idx = win_start_idx + (window_length * fs) - 1;
     curr_window = train_dg(win_start_idx:win_end_idx, :);
     Y_train(i, :) = mean(curr_window);
     win_start_idx = win_start_idx + (window_overlap * fs);
 end
+
+% Warland et al. (1997)
 f = mldivide(R' * R, R' * Y_train);
-Y_hat_train = R * f;
-train_corrs = diag(corr(Y_hat_train, Y_train));
+Y_hat_train = R * f; 
+% Upsample the predictions 
+Y_hat_train_full = zeros(size(train_dg));
+for channel = 1:num_dg_channels
+    Y_hat_train_full(:, channel) = interp1(1:length(Y_hat_train(:, channel)), ...
+        Y_hat_train(:, channel), ...
+        linspace(1, length(Y_hat_train(:, channel)), size(train_dg, 1)), ...
+        'pchip'); 
+end
+train_corrs = diag(corr(Y_hat_train_full, train_dg));
 
-% Try at least 1 other type of machine learning algorithm, you may choose
-% to loop through the fingers and train a separate classifier for angles 
-% corresponding to each finger
 
-alt_models = cell(1, 5);
-alt_models_train_performance = cell(1, 5);
-for finger = 1:num_dg_channels
-    Y_fing = Y_train(:, finger);
-    alt_models{finger} = fitrensemble(R, Y_fing);
-    Y_hat_train = predict(alt_models{finger}, R);
-    alt_models_train_performance{finger} = diag(corr(Y_hat_train, Y_fing));
+% Alternative Model
+alt_models = struct([]);
+for channel = 1:num_dg_channels
+    Y_fing = Y_train(:, channel); % downsampled target values 
+    alt_models(channel).train_down_targets = Y_fing; % store downsampled target values
+    Y_fing_full = train_dg(:, channel); % target values
+    alt_models(channel).train_targets = Y_fing_full; % store target values
+    model = fitrensemble(R, Y_fing); % fit model; supply features and targets
+    alt_models(channel).model = model; % store model
+    Y_hat_train = predict(model, R); % generate downsampled predictions
+    alt_models(channel).train_down_preds = Y_hat_train; % store downsampled predictions
+    Y_hat_train_full = interp1(1:length(Y_hat_train), Y_hat_train, ...
+        linspace(1, length(Y_hat_train), size(train_dg, 1)), ...
+        'pchip'); % upsample the predictions
+    alt_models(channel).train_preds = Y_hat_train_full; % store downsampled predictions
+    alt_models(channel).train_corr = corr(Y_hat_train_full', train_dg(:, channel));
 end
 
-% Try a form of either feature or prediction post-processing to try and
-% improve underlying data or predictions.
-
-
-%% Correlate data to get test accuracy and make figures (2 point)
-
-% Calculate accuracy by correlating predicted and actual angles for each
-% finger separately. Hint: You will want to use zohinterp to ensure both 
-% vectors are the same length.
+%% Validate classifiers
 
 R_val = getWindowedFeats(val_ecog, fs, window_length, window_overlap);
 
-Y_val = zeros(num_wins, num_dg_channels);
+% Perform downsampling of targets
+Y_val = zeros(num_val_wins, num_dg_channels);
 win_start_idx = 1;
-for i = 1:num_wins
+for i = 1:num_val_wins
     win_end_idx = win_start_idx + (window_length * fs) - 1;
     curr_window = val_dg(win_start_idx:win_end_idx, :);
     Y_val(i, :) = mean(curr_window);
     win_start_idx = win_start_idx + (window_overlap * fs);
 end
     
-f_val = mldivide(R_val' * R_val, R_val' * Y_val);
-Y_hat_val = R_val * f_val;
+Y_hat_val = R_val * f;
+% Upsample the predictions 
+Y_hat_val_full = zeros(size(val_dg));
+for channel = 1:num_dg_channels
+    Y_hat_val_full(:, channel) = interp1(1:length(Y_hat_val(:, channel)), ...
+        Y_hat_val(:, channel), ...
+        linspace(1, length(Y_hat_val(:, channel)), size(val_dg, 1)), ...
+        'pchip'); 
+end
+val_corrs = diag(corr(Y_hat_val_full, val_dg));
 
-val_corrs = diag(corr(Y_hat_val, Y_val));
-
-alt_models_val_performance = cell(1, 5);
-for finger = 1:num_dg_channels
-    Y_fing = Y_val(:, finger);
-    model = alt_models{finger};
-    Y_hat_val = predict(model, R_val);
-    alt_models_val_performance{finger} = diag(corr(Y_hat_val, Y_fing));
+% Alternative Model
+for channel = 1:num_dg_channels
+    Y_fing = Y_val(:, channel); % downsampled target values 
+    alt_models(channel).val_down_targets = Y_fing; % store downsampled target values
+    Y_fing_full = val_dg(:, channel); % target values
+    alt_models(channel).val_targets = Y_fing_full; % store target values
+    Y_hat_val = predict(model, R_val); % generate downsampled predictions
+    alt_models(channel).val_down_preds = Y_hat_val; % store downsampled predictions
+    Y_hat_val_full = interp1(1:length(Y_hat_val), Y_hat_val, ...
+        linspace(1, length(Y_hat_val), size(val_dg, 1)), ...
+        'pchip'); % upsample the predictions
+    alt_models(channel).val_preds = Y_hat_val_full; % store downsampled predictions
+    alt_models(channel).val_corr = corr(Y_hat_val_full', val_dg(:, channel));
 end
