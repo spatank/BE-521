@@ -24,7 +24,7 @@ addpath(genpath(fullfile(base_path, 'Project')))
 username = 'spatank';
 passPath = 'spa_ieeglogin.bin';
 
-subj = 2; % change this depending on which subject is being processed
+subj = 3; % change this depending on which subject is being processed
 
 % % Load training ecog from each of three patients
 % train_ecog = IEEGSession(sprintf('I521_Sub%d_Training_ecog', subj), ...
@@ -199,3 +199,14 @@ plot(1:60000, val_dg(1:60000, 1), 'r')
 plot(1:60000, test_2(1:60000, 1), 'b')
 hold off
 legend('True', 'Prediction');
+
+ks = 200:500;
+corrs_store = zeros(1, length(200:350));
+for i = 1:length(ks)
+    k = ks(i);
+    test_2 = smoothdata(Y_hat_val_full, 'movmean', k);
+    corrs_store(i) = mean(diag(corr(test_2, val_dg)));
+end
+
+figure;
+plot(ks, corrs_store)
