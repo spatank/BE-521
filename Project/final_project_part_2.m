@@ -1,4 +1,4 @@
-%% Final project part 1
+%% Final project part 2
 % Prepared by John Bernabei and Brittany Scheid
 
 % One of the oldest paradigms of BCI research is motor planning: predicting
@@ -50,11 +50,11 @@ dataglove = smoothdata(dataglove, 'movmean', 200);
 % % Split data into a train and test set (use at least 50% for training)
 
 [m, n] = size(ecog);
-P = 0.8; % percentage of training data
+P = 1; % percentage of training data
 train_ecog = ecog(1:round(P * m), :);
 train_dg = dataglove(1:round(P * m), :);
-val_ecog = ecog(round(P * m) + 1:end, :);
-val_dg = dataglove(round(P * m) + 1:end, :);
+% val_ecog = ecog(round(P * m) + 1:end, :);
+% val_dg = dataglove(round(P * m) + 1:end, :);
 
 %% Get Features
 % run getWindowedFeats function
@@ -68,13 +68,18 @@ NumWins = @(xLen, fs, winLen, winDisp) ...
     ((xLen - (winLen * fs))/(winDisp * fs) + 1);
 num_train_wins = ...
     NumWins(length(train_ecog(:, 1)), fs, window_length, window_overlap);
-num_val_wins = ...
-    NumWins(length(val_ecog(:, 1)), fs, window_length, window_overlap);
+% num_val_wins = ...
+%     NumWins(length(val_ecog(:, 1)), fs, window_length, window_overlap);
 
-% create R matrix
-R = getWindowedFeats(train_ecog, fs, window_length, window_overlap);
+% create R matrices
+R_train = getWindowedFeats(train_ecog, fs, window_length, window_overlap);
+% R_val = getWindowedFeats(val_ecog, fs, window_length, window_overlap);
 
 %% Train classifiers
+
+clc; close all;
+% clearvars -except train_ecog train_dg val_ecog val_dg ...
+%     num_train_wins num_val_wins R_train R_val
 
 % Classifier 1: Get angle predictions using optimal linear decoding. That is, 
 % calculate the linear filter (i.e. the weights matrix) as defined by 
@@ -82,133 +87,113 @@ R = getWindowedFeats(train_ecog, fs, window_length, window_overlap);
 
 num_dg_channels = size(train_dg, 2);
 
-% Downsampling using medians over windows for the dataglove signal
+% Perform downsampling 
 Y_train = zeros(num_train_wins, num_dg_channels);
-win_start_idx = 1;
-for i = 1:num_train_wins
-    win_end_idx = win_start_idx + (window_length * fs) - 1;
-    curr_window = train_dg(win_start_idx:win_end_idx, :);
-    Y_train(i, :) = median(curr_window);
-    win_start_idx = win_start_idx + (window_overlap * fs);
+for i = 1:num_dg_channels
+    downsampled = decimate(train_dg(:, i), 50);
+    downsampled(end) = []; % adjust window sizes
+    Y_train(:, i) = downsampled';
 end
 
-% Warland et al. (1997)
-f = pinv(R' * R) * (R' * Y_train);
+% % Warland et al. (1997)
+% f = pinv(R_train' * R_train) * (R_train' * Y_train);
+% 
+% Y_hat_train = R_train * f; 
+% % Upsample the predictions 
+% Y_hat_train_full = zeros(size(train_dg));
+% for channel = 1:num_dg_channels
+%     Y_hat_train_full(:, channel) = interp1(1:length(Y_hat_train(:, channel)), ...
+%         Y_hat_train(:, channel), ...
+%         linspace(1, length(Y_hat_train(:, channel)), size(train_dg, 1)), ...
+%         'pchip'); 
+% end
+% train_corrs = diag(corr(Y_hat_train_full, train_dg))
 
-Y_hat_train = R * f; 
-% Upsample the predictions 
+% Alternative Model
+alt_models = struct([]);
 Y_hat_train_full = zeros(size(train_dg));
 for channel = 1:num_dg_channels
-    Y_hat_train_full(:, channel) = interp1(1:length(Y_hat_train(:, channel)), ...
-        Y_hat_train(:, channel), ...
-        linspace(1, length(Y_hat_train(:, channel)), size(train_dg, 1)), ...
-        'pchip'); 
+    fprintf('Channel %d model training.\n', channel);
+    Y_fing = Y_train(:, channel); % downsampled target values 
+%     model = fitlm(R_train, Y_fing); % fit model; supply features and targets
+%     model = fitrlinear(R_train, Y_fing);
+    [B, FitInfo] = lasso(R_train, Y_fing, 'Alpha', 1);
+    [~, idx_min] = min(FitInfo.MSE);
+    coef = B(:, idx_min);
+    coef0 = FitInfo.Intercept(idx_min);
+    model.coef = coef;
+    model.coef0 = coef0;
+    alt_models(channel).channel_model = model; % store model
+%     Y_hat_train = predict(model, R_train); % generate downsampled predictions
+    Y_hat_train = R_train * coef + coef0;
+    Y_hat_train_full(:, channel) = interp1(1:length(Y_hat_train), Y_hat_train, ...
+        linspace(1, length(Y_hat_train), size(train_dg, 1)), ...
+        'pchip'); % upsample the predictions
+    alt_models(channel).train_corr = corr(Y_hat_train_full(:, channel), ...
+        train_dg(:, channel));
 end
-train_corrs = diag(corr(Y_hat_train_full, train_dg))
 
-% % Alternative Model
-% alt_models = struct([]);
-% for channel = 1:num_dg_channels
-%     Y_fing = Y_train(:, channel); % downsampled target values 
-%     alt_models(channel).train_down_targets = Y_fing; % store downsampled target values
-%     Y_fing_full = train_dg(:, channel); % target values
-%     alt_models(channel).train_targets = Y_fing_full; % store target values
-%     model = fitrensemble(R, Y_fing); % fit model; supply features and targets
-%     alt_models(channel).model = model; % store model
-%     Y_hat_train = predict(model, R); % generate downsampled predictions
-%     alt_models(channel).train_down_preds = Y_hat_train; % store downsampled predictions
-%     Y_hat_train_full = interp1(1:length(Y_hat_train), Y_hat_train, ...
-%         linspace(1, length(Y_hat_train), size(train_dg, 1)), ...
-%         'pchip'); % upsample the predictions
-%     alt_models(channel).train_preds = Y_hat_train_full; % store downsampled predictions
-%     alt_models(channel).train_corr = corr(Y_hat_train_full', train_dg(:, channel));
+% %% Validate classifiers
+% 
+% % Perform downsampling of targets
+% Y_val = zeros(num_val_wins, num_dg_channels);
+% for i = 1:num_dg_channels
+%     downsampled = decimate(val_dg(:, i), 50);
+%     downsampled(end) = []; % adjust window sizes
+%     Y_val(:, i) = downsampled';
 % end
-
-%% Validate classifiers
-
-R_val = getWindowedFeats(val_ecog, fs, window_length, window_overlap);
-
-% Perform downsampling of targets
-Y_val = zeros(num_val_wins, num_dg_channels);
-win_start_idx = 1;
-for i = 1:num_val_wins
-    win_end_idx = win_start_idx + (window_length * fs) - 1;
-    curr_window = val_dg(win_start_idx:win_end_idx, :);
-    Y_val(i, :) = median(curr_window);
-    win_start_idx = win_start_idx + (window_overlap * fs);
-end
-
-Y_hat_val = R_val * f;
-% Upsample the predictions 
-Y_hat_val_full = zeros(size(val_dg));
-for channel = 1:num_dg_channels
-    Y_hat_val_full(:, channel) = interp1(1:length(Y_hat_val(:, channel)), ...
-        Y_hat_val(:, channel), ...
-        linspace(1, length(Y_hat_val(:, channel)), size(val_dg, 1)), ...
-        'pchip'); 
-end
-val_corrs = diag(corr(Y_hat_val_full, val_dg))
-
+% 
+% % Y_hat_val = R_val * f;
+% % % Upsample the predictions 
+% % Y_hat_val_full = zeros(size(val_dg));
+% % for channel = 1:num_dg_channels
+% %     Y_hat_val_full(:, channel) = interp1(1:length(Y_hat_val(:, channel)), ...
+% %         Y_hat_val(:, channel), ...
+% %         linspace(1, length(Y_hat_val(:, channel)), size(val_dg, 1)), ...
+% %         'pchip'); 
+% % end
+% % val_corrs = diag(corr(Y_hat_val_full, val_dg))
+% 
 % % Alternative Model
+% Y_hat_val_full = zeros(size(val_dg));
 % for channel = 1:num_dg_channels
+%     fprintf('Channel %d model testing.\n', channel);
 %     Y_fing = Y_val(:, channel); % downsampled target values 
-%     alt_models(channel).val_down_targets = Y_fing; % store downsampled target values
-%     Y_fing_full = val_dg(:, channel); % target values
-%     alt_models(channel).val_targets = Y_fing_full; % store target values
-%     Y_hat_val = predict(model, R_val); % generate downsampled predictions
-%     alt_models(channel).val_down_preds = Y_hat_val; % store downsampled predictions
-%     Y_hat_val_full = interp1(1:length(Y_hat_val), Y_hat_val, ...
+%     model = alt_models(channel).channel_model; % get trained model
+% %     Y_hat_val = predict(model, R_val); % generate downsampled predictions
+%     Y_hat_val = R_val * model.coef + model.coef0;
+%     Y_hat_val_full(:, channel) = interp1(1:length(Y_hat_val), Y_hat_val, ...
 %         linspace(1, length(Y_hat_val), size(val_dg, 1)), ...
 %         'pchip'); % upsample the predictions
-%     alt_models(channel).val_preds = Y_hat_val_full; % store downsampled predictions
-%     alt_models(channel).val_corr = corr(Y_hat_val_full', val_dg(:, channel));
+%     alt_models(channel).val_corr = corr(Y_hat_val_full(:, channel), val_dg(:, channel));
 % end
 
-%% Test
-
-close all;
-
-figure;
-hold on
-plot(1:150000, train_dg(1:150000, 1), 'r')
-plot(1:150000, Y_hat_train_full(1:150000, 1), 'b')
-hold off
-legend('True', 'Prediction');
-
-figure;
-hold on
-plot(1:60000, val_dg(1:60000, 1), 'r')
-plot(1:60000, Y_hat_val_full(1:60000, 1), 'b')
-hold off
-legend('True', 'Prediction');
-
-figure;
-test_1 = smoothdata(Y_hat_train_full, 'movmean', 250);
-train_corrs = diag(corr(test_1, train_dg))
-hold on
-plot(1:150000, train_dg(1:150000, 1), 'r')
-plot(1:150000, test_1(1:150000), 'b')
-hold off
-legend('True', 'Prediction');
-
-figure;
-test_2 = Y_hat_val_full;
-test_2 = smoothdata(test_2, 'movmean', 250);
-val_corrs = diag(corr(test_2, val_dg))
-hold on
-plot(1:60000, val_dg(1:60000, 1), 'r')
-plot(1:60000, test_2(1:60000, 1), 'b')
-hold off
-legend('True', 'Prediction');
-
-ks = 200:500;
-corrs_store = zeros(1, length(200:350));
-for i = 1:length(ks)
-    k = ks(i);
-    test_2 = smoothdata(Y_hat_val_full, 'movmean', k);
-    corrs_store(i) = mean(diag(corr(test_2, val_dg)));
-end
-
-figure;
-plot(ks, corrs_store)
+% %% Post-processing
+% 
+% close all;
+% 
+% figure;
+% hold on
+% plot(1:150000, train_dg(1:150000, 1), 'r')
+% plot(1:150000, Y_hat_train_full(1:150000, 1), 'b')
+% hold off
+% legend('True', 'Prediction');
+%
+% figure;
+% hold on
+% plot(1:60000, val_dg(1:60000, 1), 'r')
+% plot(1:60000, Y_hat_val_full(1:60000, 1), 'b')
+% hold off
+% legend('True', 'Prediction');
+% 
+% ks = 1000:3000;
+% corrs_store = zeros(1, length(ks));
+% for i = 1:length(ks)
+%     k = ks(i);
+%     test_2 = smoothdata(Y_hat_val_full, 'movmean', k);
+%     corrs_store(i) = mean(diag(corr(test_2, val_dg)));
+% end
+% 
+% figure;
+% plot(ks, corrs_store)
 
